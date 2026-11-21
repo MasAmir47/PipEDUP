@@ -1,0 +1,3327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dragon Siege: Castle Defense — Year 3 Prepositions Adventure</title>
+  <!-- Tailwind CSS for responsive HUD, wooden unit cards, and wax-sealed parchment modals -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Storybook Medieval Fonts: Cinzel & Fredoka -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #162114;
+      font-family: 'Fredoka', sans-serif;
+      color: #2b1d12;
+    }
+    .font-castle {
+      font-family: 'Cinzel', Georgia, serif;
+    }
+    /* Medieval Oak Wood & Forged Iron UI Surfaces */
+    .oak-bar {
+      background: linear-gradient(180deg, #5c3a21 0%, #3b2312 100%);
+      border: 2.5px solid #a16e3b;
+      box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 232, 190, 0.28);
+    }
+    .oak-pill {
+      background: linear-gradient(180deg, #472b16 0%, #2d1a0c 100%);
+      border: 2px solid #c0884a;
+      color: #fef3c7;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.38);
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .oak-pill:hover {
+      border-color: #fde047;
+    }
+    .oak-pill:active {
+      transform: translateY(1px);
+    }
+    /* Wax-Sealed Parchment Scroll Surface */
+    .parchment-scroll {
+      background: linear-gradient(180deg, #fffaf0 0%, #f5e4c3 100%);
+      border: 3px solid #9c6b3b;
+      box-shadow: 0 10px 28px rgba(24, 14, 6, 0.48), inset 0 0 22px rgba(186, 134, 72, 0.22);
+      color: #2c1d11;
+    }
+    /* Tactile Wooden Defense Cards & Answer Buttons */
+    .wood-card {
+      background: linear-gradient(180deg, #6e4526 0%, #462914 100%);
+      border: 2px solid #d49b54;
+      color: #fef3c7;
+      box-shadow: 0 4px 0 #261408, 0 6px 12px rgba(0, 0, 0, 0.35);
+      transition: transform 0.1s ease, filter 0.15s ease, border-color 0.15s ease;
+    }
+    .wood-card:hover:not(:disabled) {
+      filter: brightness(1.08);
+      border-color: #fde047;
+      transform: translateY(-2px);
+    }
+    .wood-card:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #261408;
+    }
+    .wood-card:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+    }
+    .royal-btn {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      border: 2.5px solid #fef9c3;
+      color: #271304;
+      box-shadow: 0 4px 0 #78350f, 0 6px 14px rgba(0, 0, 0, 0.35);
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+    .royal-btn:hover {
+      filter: brightness(1.06);
+    }
+    .royal-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #78350f;
+    }
+    /* Red Wax Seal Emblem */
+    .wax-seal {
+      background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 65%, #7f1d1d 100%);
+      border: 2px solid #fca5a5;
+      box-shadow: 0 3px 6px rgba(127, 29, 29, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+    }
+    /* Gentle Shake on Wrong Preposition Answer */
+    @keyframes scrollShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .animate-scroll-shake {
+      animation: scrollShake 0.38s ease-in-out;
+    }
+    @keyframes bannerPop {
+      0% { transform: scale(0.75); opacity: 0; }
+      75% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-banner-pop {
+      animation: bannerPop 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #siege-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(120, 80, 40, 0.15);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #9c6b3b;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================================================================== -->
+  <!-- FULL-VIEWPORT 2D STORYBOOK CASTLE & VALLEY CANVAS                     -->
+  <!-- ===================================================================== -->
+  <div id="game-wrapper" class="relative w-full h-full overflow-hidden">
+    <canvas id="siege-canvas"></canvas>
+
+    <!-- =================================================================== -->
+    <!-- TOP HUD BAR: PAUSE, WAVE BADGE, GOLD, CASTLE HP & AUDIO             -->
+    <!-- =================================================================== -->
+    <header id="top-hud" class="hidden fixed top-0 inset-x-0 z-20 oak-bar px-2.5 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+      <!-- Top-Left: Pause/Menu Button, Wave Badge & Gold Counter -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button id="pause-btn" type="button" title="Pause & Menu"
+          class="oak-pill px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm cursor-pointer">
+          ||
+        </button>
+
+        <div class="oak-pill px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs sm:text-sm font-bold">
+          <span>⚔️</span>
+          <span id="hud-wave-badge" class="text-amber-200">Wave: 1/5</span>
+          <span id="hud-wave-topic" class="hidden md:inline text-amber-300/90 text-xs">• Place</span>
+        </div>
+
+        <div class="oak-pill px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs sm:text-sm font-bold">
+          <span>🪙</span>
+          <span id="hud-gold-text" class="text-yellow-300">150 Gold</span>
+        </div>
+
+        <div class="hidden sm:flex oak-pill px-3 py-1.5 rounded-xl items-center gap-1.5 text-xs sm:text-sm font-bold">
+          <span>🏆</span>
+          <span id="hud-score-text" class="text-emerald-300">0</span>
+        </div>
+      </div>
+
+      <!-- Top-Right: Castle HP Progress Bar, Music & Sound SFX Toggles -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="oak-pill px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-2">
+          <span class="text-xs sm:text-sm font-bold text-amber-100 whitespace-nowrap">🏰 Castle HP</span>
+          <div class="w-24 sm:w-36 h-3.5 rounded-full bg-stone-950 border border-amber-700 overflow-hidden p-0.5">
+            <div id="hud-hp-fill" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-lime-400 transition-all duration-200" style="width: 100%;"></div>
+          </div>
+          <span id="hud-hp-text" class="text-xs sm:text-sm font-bold text-lime-300 min-w-[38px] text-right">100%</span>
+        </div>
+
+        <button id="hud-music-btn" type="button" title="Toggle Medieval Music"
+          class="oak-pill px-2.5 py-1.5 rounded-xl text-sm sm:text-base cursor-pointer">
+          🎵
+        </button>
+        <button id="hud-sfx-btn" type="button" title="Toggle Sound Effects"
+          class="oak-pill px-2.5 py-1.5 rounded-xl text-sm sm:text-base cursor-pointer">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- BOTTOM HUD DOCK: LEFT DEFENSE UNIT CARDS + RIGHT PARCHMENT QUIZ     -->
+    <!-- =================================================================== -->
+    <div id="bottom-hud" class="hidden fixed bottom-2 inset-x-2 sm:inset-x-3 z-20 pointer-events-none flex flex-col lg:flex-row items-stretch lg:items-end justify-between gap-2.5">
+      <!-- BOTTOM-LEFT: 4 Tactile Wooden Defense Build / Upgrade Cards -->
+      <section class="pointer-events-auto oak-bar rounded-2xl p-2 sm:p-2.5 lg:w-[445px] xl:w-[485px] shrink-0">
+        <div class="flex items-center justify-between px-1 mb-1.5">
+          <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
+            <span>🛡️</span> Castle Defenses (Build / Upgrade)
+          </span>
+          <span id="volley-charge-badge" class="text-[11px] font-bold text-amber-300">
+            👑 King Pip's Decree Ready!
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="defense-cards-grid">
+          <!-- Card 1: Archer Tower -->
+          <button id="card-archer" type="button" data-unit="archer"
+            class="wood-card rounded-xl p-2 text-left flex flex-col justify-between cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-lg sm:text-xl">🏹</span>
+              <span id="lvl-archer" class="px-1.5 py-0.5 rounded bg-amber-950/90 text-[10px] font-bold text-amber-300">Lv.1</span>
+            </div>
+            <div class="font-bold text-xs leading-tight mt-1">Archer Tower</div>
+            <div class="text-[10px] text-amber-200/80 leading-tight">Rapid arrows</div>
+            <div id="cost-archer" class="mt-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-center text-[11px] font-bold text-yellow-300">
+              🪙 150 Gold
+            </div>
+          </button>
+
+          <!-- Card 2: Catapult -->
+          <button id="card-catapult" type="button" data-unit="catapult"
+            class="wood-card rounded-xl p-2 text-left flex flex-col justify-between cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-lg sm:text-xl">🪨</span>
+              <span id="lvl-catapult" class="px-1.5 py-0.5 rounded bg-amber-950/90 text-[10px] font-bold text-amber-300">Lv.0</span>
+            </div>
+            <div class="font-bold text-xs leading-tight mt-1">Catapult</div>
+            <div class="text-[10px] text-amber-200/80 leading-tight">Splash boulders</div>
+            <div id="cost-catapult" class="mt-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-center text-[11px] font-bold text-yellow-300">
+              🪙 300 Gold
+            </div>
+          </button>
+
+          <!-- Card 3: Gatehouse Cauldron (Unlocks Wave 3) -->
+          <button id="card-cauldron" type="button" data-unit="cauldron"
+            class="wood-card rounded-xl p-2 text-left flex flex-col justify-between cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-lg sm:text-xl">🔥</span>
+              <span id="lvl-cauldron" class="px-1.5 py-0.5 rounded bg-amber-950/90 text-[10px] font-bold text-amber-300">Wave 3</span>
+            </div>
+            <div class="font-bold text-xs leading-tight mt-1">Oil Cauldron</div>
+            <div class="text-[10px] text-amber-200/80 leading-tight">Gate defense</div>
+            <div id="cost-cauldron" class="mt-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-center text-[11px] font-bold text-yellow-300">
+              🔒 Wave 3
+            </div>
+          </button>
+
+          <!-- Card 4: Wizard Spire (Unlocks Wave 4) -->
+          <button id="card-wizard" type="button" data-unit="wizard"
+            class="wood-card rounded-xl p-2 text-left flex flex-col justify-between cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-lg sm:text-xl">🔮</span>
+              <span id="lvl-wizard" class="px-1.5 py-0.5 rounded bg-amber-950/90 text-[10px] font-bold text-amber-300">Wave 4</span>
+            </div>
+            <div class="font-bold text-xs leading-tight mt-1">Wizard Spire</div>
+            <div class="text-[10px] text-amber-200/80 leading-tight">Zaps sky &amp; land</div>
+            <div id="cost-wizard" class="mt-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-center text-[11px] font-bold text-yellow-300">
+              🔒 Wave 4
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- BOTTOM-RIGHT: Wax-Sealed Parchment Quiz Panel + King Pip Royal Portrait -->
+      <section id="quiz-scroll-panel" class="pointer-events-auto parchment-scroll rounded-2xl p-3 sm:p-3.5 flex-1 max-w-3xl ml-auto w-full relative">
+        <!-- Decorative Top-Left & Top-Right Red Wax Seals -->
+        <div class="wax-seal w-6 h-6 rounded-full flex items-center justify-center text-[11px] text-amber-100 font-bold absolute -top-2.5 -left-2.5 shadow">
+          👑
+        </div>
+        <div class="wax-seal w-6 h-6 rounded-full flex items-center justify-center text-[11px] text-amber-100 font-bold absolute -top-2.5 -right-2.5 shadow">
+          🐉
+        </div>
+
+        <div class="flex items-start gap-2.5 sm:gap-3">
+          <!-- Main Preposition Scroll Content -->
+          <div class="flex-1 min-w-0 space-y-2">
+            <!-- Scroll Header: Category Pill, Reward Tag & Hint Button -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex items-center gap-2">
+                <span id="quiz-category-badge" class="px-2.5 py-0.5 rounded-lg bg-red-800 text-amber-50 font-bold text-xs tracking-wide shadow-sm">
+                  📜 Preposition of Place • Scroll 1/15
+                </span>
+                <span class="hidden sm:inline text-xs font-bold text-amber-900">
+                  +100 Gold • +5% HP • Royal Decree!
+                </span>
+              </div>
+              <button id="quiz-hint-btn" type="button"
+                class="px-2.5 py-0.5 rounded-lg bg-amber-200 hover:bg-amber-300 border border-amber-700/50 text-amber-950 font-bold text-xs cursor-pointer transition">
+                💡 King Pip's Hint
+              </button>
+            </div>
+
+            <!-- Preposition Fill-in-the-Blank Sentence -->
+            <p id="quiz-sentence-text" class="text-sm sm:text-base md:text-[17px] font-bold text-stone-900 leading-snug">
+              "King Pip watches the green valley ______ his royal balcony."
+            </p>
+
+            <!-- 4 Tactile Wooden Answer Buttons (A, B, C, D) -->
+            <div id="quiz-answers-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Feedback / Grammar Hint Banner -->
+            <div id="quiz-feedback-bar" class="hidden rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold"></div>
+          </div>
+
+          <!-- Right Corner: King Pip Animated Royal Portrait Badge -->
+          <div class="shrink-0 flex flex-col items-center">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-red-950 to-stone-900 border-2 border-amber-500 shadow-inner overflow-hidden">
+              <canvas id="king-pip-portrait-canvas" width="110" height="110" class="w-full h-full block"></canvas>
+            </div>
+            <span class="text-[10px] font-bold text-red-900 mt-0.5 uppercase tracking-wider">King Pip</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- CUTSCENE OVERLAY (3-PANEL INTRO & OUTRO CELEBRATION)                -->
+    <!-- =================================================================== -->
+    <div id="cutscene-overlay" class="hidden fixed inset-0 z-30 pointer-events-none flex flex-col justify-between">
+      <!-- Top Letterbox Bar -->
+      <div class="w-full bg-stone-950/95 border-b-2 border-amber-500/70 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm uppercase tracking-wider truncate">
+          <span>👑</span>
+          <span id="cutscene-header-label" class="truncate">OAKWOOD CASTLE // ROYAL CHRONICLE</span>
+        </div>
+        <button id="skip-cutscene-btn" type="button"
+          class="pointer-events-auto oak-pill px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap shrink-0 cursor-pointer">
+          ⏭ Skip Cutscene
+        </button>
+      </div>
+
+      <!-- Center Victory Banner during Outro -->
+      <div id="outro-hero-banner" class="hidden my-auto mx-auto parchment-scroll rounded-3xl p-6 sm:p-8 text-center max-w-lg border-4 border-amber-500 shadow-2xl animate-banner-pop">
+        <div class="text-4xl sm:text-5xl mb-2">🏰👑🦉</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-red-800 mb-1">
+          King Pip &amp; Oakwood Castle Are Victorious!
+        </div>
+        <h2 class="font-castle text-3xl sm:text-5xl font-extrabold text-stone-900">
+          CASTLE DEFENDED!
+        </h2>
+        <p id="outro-banner-sub" class="text-sm sm:text-base font-semibold text-stone-700 mt-2">
+          Magnificent work, Royal Defender! Preparing your Knight Report Card...
+        </p>
+      </div>
+
+      <!-- Bottom Story Narration Box -->
+      <div class="w-full bg-stone-950/95 border-t-2 border-amber-500/70 px-4 sm:px-8 py-4 flex flex-col items-center text-center gap-2">
+        <div id="cutscene-panel-badge" class="px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-xs font-bold uppercase tracking-widest">
+          Panel 1 of 3 • Danger on the Horizon
+        </div>
+        <p id="cutscene-caption" class="text-amber-50 text-sm sm:text-lg md:text-xl font-semibold max-w-3xl leading-snug">
+          High atop the lookout tower, a royal scout spots the Crimson Fire Dragon and an army of shield knights marching toward Oakwood Castle!
+        </p>
+        <button id="cutscene-next-btn" type="button"
+          class="pointer-events-auto royal-btn px-5 py-1.5 rounded-xl font-bold text-xs sm:text-sm cursor-pointer mt-0.5">
+          Next Scene ▶
+        </button>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 1: FULL-SCREEN TITLE MENU (ANIMATED CASTLE VALLEY & KING PIP) -->
+    <!-- =================================================================== -->
+    <div id="start-modal" class="fixed inset-0 z-40 flex flex-col justify-between p-4 sm:p-7 overflow-y-auto bg-gradient-to-r from-stone-950/80 via-stone-950/45 to-transparent">
+      <!-- Top Bar -->
+      <header class="max-w-6xl w-full mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div class="oak-pill px-3.5 py-2 rounded-2xl flex items-center gap-2.5">
+          <span class="text-xl">👑</span>
+          <div>
+            <div class="text-[10px] uppercase tracking-widest text-amber-300 font-bold">
+              Year 3 English Grammar • Tower Defense
+            </div>
+            <div class="text-xs sm:text-sm font-bold text-amber-50">
+              King Pip's Royal Academy
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="menu-music-btn" type="button"
+            class="oak-pill px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm cursor-pointer">
+            🎵 Music: ON
+          </button>
+          <button id="open-records-menu-btn" type="button"
+            class="oak-pill px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-amber-300 cursor-pointer">
+            📋 RECORDS (<span id="records-badge-count">0</span>)
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Menu Center-Left Card (Leaves King Pip on the Royal Balcony & Valley visible!) -->
+      <main class="max-w-6xl w-full mx-auto my-auto py-3">
+        <div class="parchment-scroll max-w-xl w-full rounded-3xl p-5 sm:p-7 space-y-4 border-4 border-amber-800 relative">
+          <div class="wax-seal w-9 h-9 rounded-full flex items-center justify-center text-base text-amber-100 font-bold absolute -top-4 right-6">
+            👑
+          </div>
+
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full bg-red-800 text-amber-100 text-xs font-bold uppercase tracking-wider mb-1.5">
+              🐉 5-Wave Preposition Siege Defense
+            </span>
+            <h1 class="font-castle text-3xl sm:text-5xl font-extrabold text-stone-900 leading-none">
+              Dragon <span class="text-red-700">Siege</span>
+            </h1>
+            <div class="font-castle text-base sm:text-xl font-bold text-amber-800 mt-0.5">
+              Castle Defense with King Pip
+            </div>
+            <p class="text-stone-700 text-xs sm:text-sm mt-2 leading-relaxed font-medium">
+              Stand beside <strong>King Pip</strong> on Oakwood Castle's Royal Balcony! Solve <strong>15 Preposition Scrolls</strong> to earn Gold, build Archer Towers &amp; Catapults, and unleash King Pip's <strong>Royal Decree</strong> against the Crimson Fire Dragon!
+            </p>
+          </div>
+
+          <!-- Menu Tab Buttons -->
+          <div class="flex gap-2 border-b border-amber-800/25 pb-2.5">
+            <button id="menu-tab-play" type="button"
+              class="px-3.5 py-1.5 rounded-xl bg-red-800 text-amber-50 font-bold text-xs sm:text-sm cursor-pointer">
+              🛡️ Defender Sign-In
+            </button>
+            <button id="menu-tab-guide" type="button"
+              class="px-3.5 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300/80 text-stone-800 font-bold text-xs sm:text-sm cursor-pointer">
+              📖 How to Play
+            </button>
+          </div>
+
+          <!-- Tab 1: Student Profile & Launch -->
+          <div id="menu-panel-play" class="space-y-3.5">
+            <div class="bg-amber-100/85 rounded-2xl p-3.5 border border-amber-700/35 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  Royal Knight Registration
+                </span>
+                <button id="new-student-btn" type="button"
+                  class="text-xs font-bold text-red-800 hover:text-red-950 underline cursor-pointer">
+                  🔄 New Student
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label for="input-student-name" class="block text-xs font-bold text-stone-800 mb-1">Student Name *</label>
+                  <input id="input-student-name" type="text" maxlength="32" placeholder="e.g. Adam Haris"
+                    class="w-full px-3 py-2 rounded-xl bg-white border-2 border-amber-700/40 focus:border-amber-700 focus:outline-none text-stone-900 text-sm font-semibold" />
+                </div>
+                <div>
+                  <label for="input-student-class" class="block text-xs font-bold text-stone-800 mb-1">Class *</label>
+                  <input id="input-student-class" type="text" maxlength="20" placeholder="e.g. Year 3 Cekal"
+                    class="w-full px-3 py-2 rounded-xl bg-white border-2 border-amber-700/40 focus:border-amber-700 focus:outline-none text-stone-900 text-sm font-semibold" />
+                </div>
+              </div>
+              <p id="menu-error-msg" class="hidden text-xs font-bold text-rose-700">
+                ⚠️ Please enter both your Student Name and Class to defend the castle!
+              </p>
+            </div>
+
+            <button id="start-battle-btn" type="button"
+              class="royal-btn w-full py-3.5 px-6 rounded-2xl font-bold text-base sm:text-xl cursor-pointer">
+              ⚔️ Start Battle
+            </button>
+          </div>
+
+          <!-- Tab 2: How to Play -->
+          <div id="menu-panel-guide" class="hidden bg-amber-100/85 rounded-2xl p-3.5 border border-amber-700/35 space-y-2 text-xs sm:text-sm text-stone-800">
+            <div class="font-bold text-amber-950 uppercase tracking-wider text-xs">How to Defend Oakwood Castle</div>
+            <ul class="space-y-1.5 font-medium">
+              <li>• <strong>Solve Preposition Scrolls:</strong> Pick the right preposition of <em>Place, Manner/Tool, Direction,</em> or <em>Time</em> on the bottom-right scroll!</li>
+              <li>• <strong>King Pip's Royal Decree:</strong> Every correct scroll awards <strong>+100 Gold</strong>, repairs <strong>+5% Castle HP</strong>, and makes King Pip wave his golden scepter to launch a Super Volley!</li>
+              <li>• <strong>Build Castle Defenses:</strong> Click the wooden cards on the bottom-left to build and upgrade <strong>Archer Towers</strong>, <strong>Catapults</strong>, <strong>Oil Cauldrons</strong>, and <strong>Wizard Spires</strong>.</li>
+              <li>• <strong>Defeat Wave 5 Boss:</strong> Solve scrolls to break the Crimson Fire Dragon's shield!</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Footer -->
+      <footer class="max-w-6xl w-full mx-auto flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200/90">
+        <span>👑 Watch King Pip on the Royal Balcony track enemies and your cursor!</span>
+        <span>Press keys A / B / C / D or 1–4 for quick scroll answers</span>
+      </footer>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 2: PAUSE MENU                                                 -->
+    <!-- =================================================================== -->
+    <div id="pause-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4">
+      <div class="parchment-scroll max-w-md w-full rounded-3xl p-6 text-center space-y-4 border-4 border-amber-800">
+        <div class="text-4xl">👑🏰</div>
+        <h2 class="font-castle text-2xl sm:text-3xl font-extrabold text-stone-900">Siege Paused</h2>
+        <p class="text-xs sm:text-sm text-stone-700 font-medium">
+          King Pip holds the battlements while you take a breather!
+        </p>
+        <div class="space-y-2.5">
+          <button id="resume-battle-btn" type="button"
+            class="royal-btn w-full py-3 rounded-2xl font-bold text-sm sm:text-base cursor-pointer">
+            ▶ Resume Battle
+          </button>
+          <button id="pause-records-btn" type="button"
+            class="oak-pill w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-amber-300 cursor-pointer">
+            📋 Classroom Records
+          </button>
+          <button id="pause-restart-btn" type="button"
+            class="oak-pill w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm cursor-pointer">
+            🔄 Restart Wave 1
+          </button>
+          <button id="pause-menu-btn" type="button"
+            class="oak-pill w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-rose-200 cursor-pointer">
+            🏠 Return to Title Menu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 3: VICTORY / DEFEAT REPORT CARD                               -->
+    <!-- =================================================================== -->
+    <div id="victory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-stone-950/85 p-3 sm:p-5">
+      <div class="parchment-scroll max-w-xl w-full rounded-3xl p-5 sm:p-7 text-center space-y-4 border-4 border-amber-500 max-h-[92vh] overflow-y-auto">
+        <div id="victory-badge-pill" class="inline-block px-3.5 py-1 rounded-full bg-red-800 text-amber-100 text-xs font-bold uppercase tracking-widest">
+          🏅 Royal Knight Medal Awarded
+        </div>
+        <h2 id="victory-title" class="font-castle text-3xl sm:text-4xl font-extrabold text-stone-900">
+          CASTLE DEFENDED!
+        </h2>
+
+        <div id="victory-stars" class="text-4xl sm:text-5xl">⭐⭐⭐</div>
+        <div>
+          <div id="victory-rank" class="text-base sm:text-lg font-bold text-red-800">
+            Rank: 3-Star Royal Dragon-Slayer!
+          </div>
+          <div id="victory-student-info" class="text-xs sm:text-sm font-bold text-stone-700 mt-0.5">
+            Sir Adam (Year 3) • Score: 650 • Castle HP: 100% • 1st-Try Accuracy: 100%
+          </div>
+        </div>
+
+        <!-- 4-Category Grammar Breakdown -->
+        <div class="bg-amber-100/90 rounded-2xl p-3.5 border border-amber-700/40 text-left space-y-2">
+          <div class="text-xs font-bold uppercase tracking-wider text-amber-900">
+            Preposition Skill Breakdown
+          </div>
+          <div id="victory-breakdown" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+          <button id="victory-menu-btn" type="button"
+            class="py-2.5 px-2 rounded-2xl oak-pill font-bold text-xs cursor-pointer">
+            🏠 Menu
+          </button>
+          <button id="victory-records-btn" type="button"
+            class="py-2.5 px-2 rounded-2xl oak-pill font-bold text-xs text-amber-300 cursor-pointer">
+            📋 Records
+          </button>
+          <button id="victory-replay-btn" type="button"
+            class="py-2.5 px-2 rounded-2xl oak-pill font-bold text-xs text-emerald-300 cursor-pointer">
+            🔄 Replay
+          </button>
+          <button id="victory-endless-btn" type="button"
+            class="py-2.5 px-2 rounded-2xl royal-btn font-bold text-xs cursor-pointer">
+            ♾️ Endless Siege
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 4: CLASSROOM RECORDS LOG (TEACHER SCOREBOARD)                 -->
+    <!-- =================================================================== -->
+    <div id="records-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-stone-950/90 p-3 sm:p-5">
+      <div class="parchment-scroll max-w-3xl w-full rounded-3xl p-5 sm:p-6 space-y-4 border-4 border-amber-700 max-h-[88vh] flex flex-col">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-widest text-red-800">Teacher Classroom Log</span>
+            <h2 class="font-castle text-2xl sm:text-3xl font-extrabold text-stone-900">📋 Royal Defender Records</h2>
+          </div>
+          <button id="close-records-btn" type="button"
+            class="oak-pill px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm cursor-pointer">
+            ✖ Close
+          </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 rounded-2xl border-2 border-amber-800/40 bg-white/95">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead class="bg-red-900 text-amber-100 uppercase text-[11px] tracking-wider sticky top-0">
+              <tr>
+                <th class="py-2.5 px-3">#</th>
+                <th class="py-2.5 px-3">Student Name</th>
+                <th class="py-2.5 px-3">Class</th>
+                <th class="py-2.5 px-3">Score</th>
+                <th class="py-2.5 px-3">Accuracy</th>
+                <th class="py-2.5 px-3">Castle HP</th>
+                <th class="py-2.5 px-3">Star Rank</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body" class="divide-y divide-amber-200 text-stone-800">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="records-copy-toast" class="hidden text-center text-xs font-bold text-emerald-900 bg-emerald-100 border border-emerald-500 py-2 px-3 rounded-xl">
+          ✅ Copied all student records! Ready to paste into Google Sheets or Excel.
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <button id="clear-records-btn" type="button"
+            class="px-4 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 border border-rose-400 text-rose-900 font-bold text-xs sm:text-sm cursor-pointer">
+            🗑️ Clear Records
+          </button>
+          <button id="copy-records-btn" type="button"
+            class="royal-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm cursor-pointer">
+            📄 Copy Scores for Spreadsheet
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // RoundRect polyfill for broad Chromebook / older browser compatibility
+    if (typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        const radius = Array.isArray(r) ? r[0] : (r || 0);
+        this.beginPath();
+        this.moveTo(x + radius, y);
+        this.arcTo(x + w, y, x + w, y + h, radius);
+        this.arcTo(x + w, y + h, x, y + h, radius);
+        this.arcTo(x, y + h, x, y, radius);
+        this.arcTo(x, y, x + w, y, radius);
+        this.closePath();
+        return this;
+      };
+    }
+
+    /**
+     * =========================================================================
+     * 1. GLOBAL GAME STATE & SAFE CLASSROOM RECORDS STORAGE
+     * =========================================================================
+     */
+    const state = {
+      screen: "menu", // "menu" | "intro" | "playing" | "paused" | "outro" | "victory"
+      studentName: "",
+      studentClass: "",
+      wave: 1,
+      maxCampaignWaves: 5,
+      endlessMode: false,
+      gold: 150,
+      castleHp: 100,
+      maxCastleHp: 100,
+      score: 0,
+      // Castle Defenses
+      towers: {
+        archer: 1,   // Lv.1 at start
+        catapult: 0, // Lv.0 (unbuilt)
+        cauldron: 0, // Unlocks Wave 3
+        wizard: 0    // Unlocks Wave 4
+      },
+      towerCooldowns: {
+        archer: 0.5,
+        catapult: 1.5,
+        cauldron: 1.2,
+        wizard: 1.0
+      },
+      catapultSwing: 0,
+      cauldronPour: 0,
+      // Preposition Quiz State
+      questionIdx: 0,
+      solvedCount: 0,
+      firstTrySet: new Set(),
+      attemptedSet: new Set(),
+      quizLocked: false,
+      // King Pip Owl Animations
+      mouseX: 640,
+      mouseY: 360,
+      isBlinking: false,
+      blinkTimer: 2.8,
+      pipHop: 0,
+      scepterRaise: 0,
+      // Wave Spawner & Entities
+      enemies: [],
+      projectiles: [],
+      particles: [],
+      floatingTexts: [],
+      waveSpawnQueue: [],
+      spawnTimer: 1.2,
+      waveClearDelay: 0,
+      emergencyAegisUsed: false,
+      // Cutscenes & Audio
+      introPanel: 0,
+      outroTimer: 0,
+      resultLogged: false,
+      muted: false,
+      musicMuted: false
+    };
+
+    const recordsStore = (() => {
+      const STORAGE_KEY = "dragon_siege_castle_records_v1";
+      const PROFILE_KEY = "dragon_siege_castle_profile_v1";
+      let memoryRecords = [];
+      let memoryProfile = { name: "", cls: "" };
+
+      function safeRead(key, fallback) {
+        try {
+          const raw = window.localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (err) {
+          return fallback;
+        }
+      }
+
+      function safeWrite(key, value) {
+        try {
+          window.localStorage.setItem(key, JSON.stringify(value));
+        } catch (err) {
+          // Safe fallback in sandboxed iframes
+        }
+      }
+
+      memoryRecords = safeRead(STORAGE_KEY, []);
+      memoryProfile = safeRead(PROFILE_KEY, { name: "", cls: "" });
+
+      function updateBadge() {
+        const badge = document.getElementById("records-badge-count");
+        if (badge) badge.textContent = String(memoryRecords.length);
+      }
+
+      function getLastStudent() {
+        return { ...memoryProfile };
+      }
+
+      function setLastStudent(name, cls) {
+        memoryProfile = { name, cls };
+        safeWrite(PROFILE_KEY, memoryProfile);
+      }
+
+      function addRecord(entry) {
+        memoryRecords.unshift(entry);
+        safeWrite(STORAGE_KEY, memoryRecords);
+        updateBadge();
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById("records-table-body");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        if (memoryRecords.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="py-6 px-4 text-center text-stone-500 font-semibold">
+                No castle defenses completed yet. Defeat the Crimson Dragon to log student scores here!
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        memoryRecords.forEach((rec, index) => {
+          const tr = document.createElement("tr");
+          tr.className = index % 2 === 0 ? "bg-white" : "bg-amber-50/70";
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 font-bold text-stone-500">${index + 1}</td>
+            <td class="py-2.5 px-3 font-bold text-stone-900">${rec.name}</td>
+            <td class="py-2.5 px-3 font-semibold text-stone-700">${rec.className}</td>
+            <td class="py-2.5 px-3 font-bold text-emerald-700">${rec.score}</td>
+            <td class="py-2.5 px-3 font-bold text-amber-800">${rec.accuracy}%</td>
+            <td class="py-2.5 px-3 font-bold text-sky-800">${rec.castleHp}%</td>
+            <td class="py-2.5 px-3 font-bold">${rec.rank}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function clearRecords() {
+        memoryRecords = [];
+        safeWrite(STORAGE_KEY, memoryRecords);
+        updateBadge();
+        renderTable();
+      }
+
+      function copyForSpreadsheet() {
+        const header = "Student Name\tClass\tScore\tAccuracy (%)\tCastle HP (%)\tStar Rank\tDate";
+        const rows = memoryRecords.map(
+          (r) => `${r.name}\t${r.className}\t${r.score}\t${r.accuracy}%\t${r.castleHp}%\t${r.rank}\t${r.date || ""}`
+        );
+        const tsv = [header, ...rows].join("\n");
+
+        const ta = document.createElement("textarea");
+        ta.value = tsv;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+        } catch (err) {
+          // Ignore clipboard restrictions
+        }
+        document.body.removeChild(ta);
+
+        const toast = document.getElementById("records-copy-toast");
+        if (toast) {
+          toast.classList.remove("hidden");
+          setTimeout(() => toast.classList.add("hidden"), 3000);
+        }
+      }
+
+      return {
+        getLastStudent,
+        setLastStudent,
+        updateBadge,
+        addRecord,
+        renderTable,
+        clearRecords,
+        copyForSpreadsheet
+      };
+    })();
+
+    /**
+     * =========================================================================
+     * 2. PROCEDURAL MEDIEVAL MUSIC & BATTLE SOUND EFFECTS (WEB AUDIO API)
+     * =========================================================================
+     */
+    const audio = (() => {
+      let ctx = null;
+      let musicGain = null;
+      let sfxGain = null;
+      let musicStarted = false;
+      let step = 0;
+
+      function ensureCtx() {
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return null;
+          ctx = new AudioCtx();
+          musicGain = ctx.createGain();
+          sfxGain = ctx.createGain();
+          musicGain.connect(ctx.destination);
+          sfxGain.connect(ctx.destination);
+          updateVolume();
+        }
+        if (ctx.state === "suspended") {
+          ctx.resume().catch(() => {});
+        }
+        return ctx;
+      }
+
+      function updateVolume() {
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        musicGain.gain.setTargetAtTime(state.musicMuted ? 0 : 0.13, now, 0.05);
+        sfxGain.gain.setTargetAtTime(state.muted ? 0 : 0.28, now, 0.05);
+      }
+
+      function playTone(freq, duration, type = "sine", dest = "sfx", delay = 0, vol = 0.22) {
+        const c = ensureCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+
+        gain.gain.setValueAtTime(0.0001, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(vol, c.currentTime + delay + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + duration);
+
+        osc.connect(gain);
+        gain.connect(dest === "music" ? musicGain : sfxGain);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + duration + 0.02);
+      }
+
+      function startMusic() {
+        ensureCtx();
+        if (musicStarted) return;
+        musicStarted = true;
+
+        // Lively Medieval Lute & Soft Drum Rhythm (G Mixolydian / Dorian heroic feel)
+        const luteNotes = [392.0, 440.0, 493.88, 587.33, 493.88, 440.0, 392.0, 293.66];
+        const drumBeats = [98.0, 0, 146.83, 0, 98.0, 98.0, 146.83, 0];
+
+        setInterval(() => {
+          if (state.musicMuted || state.screen === "paused") return;
+          const idx = step % luteNotes.length;
+          playTone(luteNotes[idx], 0.28, "triangle", "music", 0, 0.16);
+          if (drumBeats[idx] > 0) {
+            playTone(drumBeats[idx], 0.18, "sine", "music", 0, 0.22);
+          }
+          step++;
+        }, 360);
+      }
+
+      function click() {
+        playTone(560, 0.06, "triangle", "sfx", 0, 0.18);
+      }
+
+      function bowShot() {
+        playTone(680, 0.06, "sine", "sfx", 0, 0.08);
+        playTone(420, 0.08, "triangle", "sfx", 0.02, 0.07);
+      }
+
+      function catapultLaunch() {
+        playTone(170, 0.2, "sawtooth", "sfx", 0, 0.15);
+        playTone(115, 0.25, "sine", "sfx", 0.05, 0.18);
+      }
+
+      function coinBuild() {
+        playTone(783.99, 0.09, "triangle", "sfx", 0, 0.22);
+        playTone(1046.5, 0.18, "triangle", "sfx", 0.07, 0.24);
+      }
+
+      function owlHoot() {
+        playTone(415, 0.15, "sine", "sfx", 0, 0.22);
+        playTone(349.23, 0.3, "sine", "sfx", 0.18, 0.24);
+      }
+
+      function royalDecreeFanfare() {
+        playTone(523.25, 0.12, "triangle", "sfx", 0, 0.25);
+        playTone(659.25, 0.12, "triangle", "sfx", 0.09, 0.25);
+        playTone(783.99, 0.24, "triangle", "sfx", 0.18, 0.28);
+      }
+
+      function wrong() {
+        playTone(220, 0.16, "sawtooth", "sfx", 0, 0.15);
+        playTone(185, 0.22, "sawtooth", "sfx", 0.12, 0.15);
+      }
+
+      function gateHit() {
+        playTone(110, 0.18, "sawtooth", "sfx", 0, 0.2);
+      }
+
+      function victoryTrumpet() {
+        const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+        notes.forEach((n, i) => {
+          playTone(n, 0.26, "triangle", "sfx", i * 0.12, 0.26);
+        });
+      }
+
+      return {
+        click,
+        bowShot,
+        catapultLaunch,
+        coinBuild,
+        owlHoot,
+        royalDecreeFanfare,
+        wrong,
+        gateHit,
+        victoryTrumpet,
+        startMusic,
+        updateVolume
+      };
+    })();
+
+    /**
+     * =========================================================================
+     * 3. 15 YEAR 3 PREPOSITION QUESTIONS & DEFENSE UNIT DEFINITIONS
+     * =========================================================================
+     */
+    const QUESTIONS_DATA = [
+      // WAVE 1: PREPOSITIONS OF PLACE
+      {
+        id: 1,
+        wave: 1,
+        category: "Place",
+        sentence: "King Pip watches the green valley ______ his royal balcony.",
+        options: ["from", "under", "into", "at"],
+        answer: "from",
+        hint: "Which preposition shows the starting place where King Pip is looking out?"
+      },
+      {
+        id: 2,
+        wave: 1,
+        category: "Place",
+        sentence: "A sneaky goblin scout is hiding ______ a wooden shield.",
+        options: ["behind", "above", "through", "with"],
+        answer: "behind",
+        hint: "When a goblin stands at the back of a shield so you cannot see him, he is '___' it."
+      },
+      {
+        id: 3,
+        wave: 1,
+        category: "Place",
+        sentence: "The golden treasure chest sits ______ two castle guards.",
+        options: ["between", "over", "into", "during"],
+        answer: "between",
+        hint: "When something has one guard on its left and one on its right, it is '___' them."
+      },
+
+      // WAVE 2: PREPOSITIONS OF MANNER & TOOL
+      {
+        id: 4,
+        wave: 2,
+        category: "Manner & Tool",
+        sentence: "The archer shot an arrow ______ a wooden bow.",
+        options: ["with", "under", "into", "behind"],
+        answer: "with",
+        hint: "We use '___' before the tool or weapon used to perform an action!"
+      },
+      {
+        id: 5,
+        wave: 2,
+        category: "Manner & Tool",
+        sentence: "The heavy stone castle gate was built ______ royal masons.",
+        options: ["by", "on", "through", "at"],
+        answer: "by",
+        hint: "Which preposition tells us who built or made the castle gate?"
+      },
+      {
+        id: 6,
+        wave: 2,
+        category: "Manner & Tool",
+        sentence: "The brave defenders held the wall ______ great courage.",
+        options: ["with", "below", "across", "after"],
+        answer: "with",
+        hint: "Which word shows the brave manner in which the defenders fought?"
+      },
+
+      // WAVE 3: PREPOSITIONS OF DIRECTION
+      {
+        id: 7,
+        wave: 3,
+        category: "Direction",
+        sentence: "A heavy catapult boulder flew high ______ the castle wall!",
+        options: ["over", "under", "at", "with"],
+        answer: "over",
+        hint: "The boulder traveled in an arc above and across the top of the wall—so it flew '___' it."
+      },
+      {
+        id: 8,
+        wave: 3,
+        category: "Direction",
+        sentence: "The armored shield knights marched ______ the valley road.",
+        options: ["along", "between", "before", "by"],
+        answer: "along",
+        hint: "Following a road from one end toward the other is marching '___' the road."
+      },
+      {
+        id: 9,
+        wave: 3,
+        category: "Direction",
+        sentence: "The fierce dragon swooped down ______ the fluffy white clouds.",
+        options: ["through", "on", "after", "with"],
+        answer: "through",
+        hint: "Flying right into one side of a cloud and out the other is flying '___' it."
+      },
+
+      // WAVE 4: PREPOSITIONS OF TIME
+      {
+        id: 10,
+        wave: 4,
+        category: "Time",
+        sentence: "King Pip sounded the golden battle horn ______ dawn.",
+        options: ["at", "on", "in", "under"],
+        answer: "at",
+        hint: "Use 'at' for specific points of the day like dawn, noon, or midnight!"
+      },
+      {
+        id: 11,
+        wave: 4,
+        category: "Time",
+        sentence: "Royal reinforcements arrived ______ the sun went down.",
+        options: ["before", "into", "between", "with"],
+        answer: "before",
+        hint: "First the knights arrived, and later the sun set—so they arrived '___' sunset."
+      },
+      {
+        id: 12,
+        wave: 4,
+        category: "Time",
+        sentence: "The villagers cheered loudly ______ the wyverns flew away.",
+        options: ["after", "under", "through", "by"],
+        answer: "after",
+        hint: "First the wyverns left, and then everyone cheered—so it happened '___' they flew away."
+      },
+
+      // WAVE 5: BOSS MASTERY (MIXED PLACE, TOOL & DIRECTION)
+      {
+        id: 13,
+        wave: 5,
+        category: "Boss Mastery",
+        sentence: "Aim the Dragon-Slayer Ballista straight ______ the dragon's fire shield!",
+        options: ["at", "under", "after", "between"],
+        answer: "at",
+        hint: "When pointing a weapon directly toward a target, you aim '___' the target."
+      },
+      {
+        id: 14,
+        wave: 5,
+        category: "Boss Mastery",
+        sentence: "King Pip raised his golden scepter high ______ his royal crown.",
+        options: ["above", "under", "into", "before"],
+        answer: "above",
+        hint: "Higher than the top of his head and crown is '___' his crown!"
+      },
+      {
+        id: 15,
+        wave: 5,
+        category: "Boss Mastery",
+        sentence: "The final magic bolt shattered the shield ______ a dazzling flash!",
+        options: ["with", "behind", "at", "across"],
+        answer: "with",
+        hint: "Which preposition connects the magic bolt to the dazzling flash it made?"
+      }
+    ];
+
+    const WAVE_INFO = {
+      1: { topic: "Place", banner: "Wave 1: Goblin Scouts Advance!" },
+      2: { topic: "Manner & Tool", banner: "Wave 2: Shield Knights & Young Drake!" },
+      3: { topic: "Direction", banner: "Wave 3: Iron Battering Ram Approaching!" },
+      4: { topic: "Time", banner: "Wave 4: Dusk Cavalry & Sky Wyverns!" },
+      5: { topic: "Boss Mastery", banner: "Wave 5 BOSS: The Crimson Fire Dragon!" }
+    };
+
+    const UNIT_DEFS = {
+      archer: { name: "Archer Tower", baseCost: 150, stepCost: 125, maxLvl: 3, unlockWave: 1 },
+      catapult: { name: "Catapult", baseCost: 300, stepCost: 175, maxLvl: 3, unlockWave: 1 },
+      cauldron: { name: "Oil Cauldron", baseCost: 400, stepCost: 200, maxLvl: 3, unlockWave: 3 },
+      wizard: { name: "Wizard Spire", baseCost: 500, stepCost: 250, maxLvl: 3, unlockWave: 4 }
+    };
+
+    /**
+     * =========================================================================
+     * 4. KING PIP (CUSTOM ANIMATED ROYAL OWL IN VELVET ROBE, SCEPTER & CROWN)
+     * =========================================================================
+     */
+    function drawKingPip(ctx, x, y, scale = 1, opts = {}) {
+      const {
+        lookX = x + 200,
+        lookY = y,
+        isBlinking = false,
+        portraitMode = false,
+        elapsed = 0
+      } = opts;
+
+      const hopOffset = portraitMode ? 0 : -state.pipHop;
+      const scepterAngle = -0.25 - state.scepterRaise * 0.55 + Math.sin(elapsed * 3) * 0.05;
+      const idleBob = Math.sin(elapsed * 2.5) * (portraitMode ? 1.0 : 1.8);
+
+      ctx.save();
+      ctx.translate(x, y + hopOffset + idleBob);
+      ctx.scale(scale, scale);
+
+      // 1. Flowing Royal Crimson Velvet Cape (Behind Body)
+      ctx.fillStyle = "#991b1b";
+      ctx.strokeStyle = "#450a0a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-24, -6);
+      ctx.lineTo(-42, 46);
+      ctx.quadraticCurveTo(0, 54, 42, 46);
+      ctx.lineTo(24, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // White Ermine Fur Hem at Bottom of Cape
+      ctx.fillStyle = "#f8fafc";
+      ctx.beginPath();
+      ctx.moveTo(-40, 41);
+      ctx.quadraticCurveTo(0, 49, 40, 41);
+      ctx.lineTo(42, 47);
+      ctx.quadraticCurveTo(0, 55, -42, 47);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Orange Owl Feet (when full body)
+      if (!portraitMode) {
+        ctx.fillStyle = "#f97316";
+        ctx.strokeStyle = "#7c2d12";
+        ctx.lineWidth = 1.8;
+        [-13, 13].forEach((fx) => {
+          ctx.beginPath();
+          ctx.moveTo(fx - 8, 52);
+          ctx.lineTo(fx, 43);
+          ctx.lineTo(fx + 8, 52);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        });
+      }
+
+      // 3. Left Folded Brown Owl Wing
+      ctx.fillStyle = "#4a2c14";
+      ctx.strokeStyle = "#261408";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(-30, 14, 11, 27, 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 4. Warm Brown Owl Body
+      ctx.fillStyle = "#6b4423";
+      ctx.strokeStyle = "#2b1608";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 12, 30, 36, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 5. Cream Belly & Scalloped Feather Markings
+      ctx.fillStyle = "#f5e6c8";
+      ctx.beginPath();
+      ctx.ellipse(0, 17, 20, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#cbb082";
+      ctx.lineWidth = 1.8;
+      [6, 15, 24].forEach((sy, rIdx) => {
+        const cols = rIdx % 2 === 0 ? [-7, 0, 7] : [-4, 4];
+        cols.forEach((sx) => {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+          ctx.stroke();
+        });
+      });
+
+      // 6. Royal Crimson & White Ermine Fur Collar Mantle
+      ctx.fillStyle = "#b91c1c";
+      ctx.strokeStyle = "#450a0a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-26, -7);
+      ctx.quadraticCurveTo(0, 4, 26, -7);
+      ctx.lineTo(34, 12);
+      ctx.quadraticCurveTo(15, 20, 0, 11);
+      ctx.quadraticCurveTo(-15, 20, -34, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // White Ermine Fur Trim & Black Ermine Spots
+      ctx.fillStyle = "#f8fafc";
+      ctx.beginPath();
+      ctx.moveTo(-27, -6);
+      ctx.quadraticCurveTo(0, 4, 27, -6);
+      ctx.lineTo(29, 1);
+      ctx.quadraticCurveTo(0, 11, -29, 1);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      [-18, -9, 0, 9, 18].forEach((ex) => {
+        ctx.beginPath();
+        ctx.arc(ex, -1 + (Math.abs(ex) < 5 ? 2 : 0), 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Golden Royal Medallion Clasp on Chest
+      ctx.fillStyle = "#facc15";
+      ctx.strokeStyle = "#78350f";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(0, 6, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#e11d48";
+      ctx.beginPath();
+      ctx.arc(0, 6, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 7. Right Wing Holding Gleaming Golden Royal Scepter
+      ctx.save();
+      ctx.translate(28, 10);
+      ctx.rotate(scepterAngle);
+
+      // Golden Scepter Staff
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 18);
+      ctx.lineTo(0, -38);
+      ctx.stroke();
+      ctx.strokeStyle = "#78350f";
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(-2, -38, 4, 56);
+
+      // Royal Orb & Sunburst Finial on Scepter Top
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.arc(0, -42, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.arc(0, -42, 3.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Radiant sparkle when King Pip triggers Royal Decree!
+      if (state.scepterRaise > 0.15) {
+        ctx.fillStyle = `rgba(254, 249, 195, ${state.scepterRaise * 0.85})`;
+        ctx.beginPath();
+        ctx.arc(0, -42, 18 * state.scepterRaise, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Right Brown Wing clasping scepter
+      ctx.fillStyle = "#4a2c14";
+      ctx.strokeStyle = "#261408";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 10, 23, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // 8. Owl Head & Cream Facial Disc
+      ctx.fillStyle = "#6b4423";
+      ctx.strokeStyle = "#2b1608";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.ellipse(0, -24, 28, 23, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#f5e6c8";
+      ctx.beginPath();
+      ctx.arc(-11, -24, 12, 0, Math.PI * 2);
+      ctx.arc(11, -24, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 9. Large Round Eyes with Dynamic Tracking Pupils & Natural Blinking
+      const dx = lookX - x;
+      const dy = lookY - (y - 24 * scale);
+      const dist = Math.hypot(dx, dy) || 1;
+      const maxOffset = 3.2;
+      const pupilOx = (dx / dist) * Math.min(maxOffset, dist * 0.025);
+      const pupilOy = (dy / dist) * Math.min(maxOffset, dist * 0.025);
+
+      [-11, 11].forEach((ex) => {
+        if (isBlinking) {
+          ctx.strokeStyle = "#2b1608";
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.arc(ex, -24, 8, 0.1 * Math.PI, 0.9 * Math.PI);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#2b1608";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(ex, -24, 9.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#0f172a";
+          ctx.beginPath();
+          ctx.arc(ex + pupilOx, -24 + pupilOy, 5.1, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(ex + pupilOx - 1.6, -25.6 + pupilOy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 10. Bright Orange Triangular Beak
+      ctx.fillStyle = "#f59e0b";
+      ctx.strokeStyle = "#78350f";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(-5.5, -18);
+      ctx.lineTo(5.5, -18);
+      ctx.lineTo(0, -10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 11. Ornate Jeweled Gold King's Crown
+      // Crimson velvet inner cap
+      ctx.fillStyle = "#b91c1c";
+      ctx.beginPath();
+      ctx.arc(0, -45, 16, Math.PI, 0, false);
+      ctx.fill();
+
+      // Sculpted Gold Crown Band & 5 Peaks
+      const crownGrad = ctx.createLinearGradient(-22, -64, 22, -40);
+      crownGrad.addColorStop(0, "#fef08a");
+      crownGrad.addColorStop(0.5, "#facc15");
+      crownGrad.addColorStop(1, "#d97706");
+
+      ctx.fillStyle = crownGrad;
+      ctx.strokeStyle = "#78350f";
+      ctx.lineWidth = 1.9;
+      ctx.beginPath();
+      ctx.moveTo(-21, -41);
+      ctx.lineTo(-24, -58);
+      ctx.lineTo(-13, -49);
+      ctx.lineTo(-7, -63);
+      ctx.lineTo(0, -50);
+      ctx.lineTo(7, -63);
+      ctx.lineTo(13, -49);
+      ctx.lineTo(24, -58);
+      ctx.lineTo(21, -41);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Crown Pearls on Peaks
+      ctx.fillStyle = "#fef9c3";
+      [-24, -7, 7, 24].forEach((px, idx) => {
+        const py = idx === 1 || idx === 2 ? -64 : -59;
+        ctx.beginPath();
+        ctx.arc(px, py, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Crown Jewels (Ruby, Emerald, Sapphire)
+      ctx.fillStyle = "#e11d48";
+      ctx.beginPath();
+      ctx.arc(0, -45, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath();
+      ctx.arc(-12, -45, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#2563eb";
+      ctx.beginPath();
+      ctx.arc(12, -45, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /**
+     * =========================================================================
+     * 5. STORYBOOK VALLEY, OAKWOOD CASTLE, KING PIP BALCONY & DEFENDERS
+     * Logical Viewport: 1280 x 720
+     * =========================================================================
+     */
+    const ROAD_WAYPOINTS = [
+      { x: 1290, y: 470 },
+      { x: 1090, y: 485 },
+      { x: 910, y: 445 },
+      { x: 720, y: 465 },
+      { x: 540, y: 505 },
+      { x: 365, y: 475 } // Castle Drawbridge Gate!
+    ];
+
+    function getPointOnRoad(progress) {
+      const clamped = Math.max(0, Math.min(1, progress));
+      const totalSegs = ROAD_WAYPOINTS.length - 1;
+      const scaled = clamped * totalSegs;
+      const idx = Math.min(totalSegs - 1, Math.floor(scaled));
+      const t = scaled - idx;
+      const p0 = ROAD_WAYPOINTS[idx];
+      const p1 = ROAD_WAYPOINTS[idx + 1];
+      return {
+        x: p0.x + (p1.x - p0.x) * t,
+        y: p0.y + (p1.y - p0.y) * t
+      };
+    }
+
+    function drawValleyBackground(ctx, elapsed, waveNum) {
+      // Sky Palette shifts by Wave (Sunny Morning -> Dusk -> Boss Twilight)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 460);
+      if (waveNum <= 3) {
+        skyGrad.addColorStop(0, "#38bdf8");
+        skyGrad.addColorStop(0.65, "#bae6fd");
+        skyGrad.addColorStop(1, "#fef9c3");
+      } else if (waveNum === 4) {
+        skyGrad.addColorStop(0, "#1e3a8a");
+        skyGrad.addColorStop(0.55, "#f97316");
+        skyGrad.addColorStop(1, "#fde047");
+      } else {
+        skyGrad.addColorStop(0, "#1e1b4b");
+        skyGrad.addColorStop(0.55, "#7f1d1d");
+        skyGrad.addColorStop(1, "#f59e0b");
+      }
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, 1280, 460);
+
+      // Warm Sun / Moon Disc
+      ctx.fillStyle = waveNum <= 3 ? "rgba(254, 249, 195, 0.9)" : "rgba(253, 224, 71, 0.85)";
+      ctx.beginPath();
+      ctx.arc(980, waveNum === 4 ? 220 : 125, 46, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Drifting Fluffy Clouds
+      ctx.fillStyle = waveNum >= 5 ? "rgba(254, 202, 202, 0.32)" : "rgba(255, 255, 255, 0.82)";
+      [
+        { bx: 480, by: 105, s: 1.0, spd: 12 },
+        { bx: 820, by: 85, s: 1.2, spd: 8 },
+        { bx: 1130, by: 145, s: 0.9, spd: 15 }
+      ].forEach((c) => {
+        const cx = ((c.bx + elapsed * c.spd) % 1380) - 50;
+        ctx.beginPath();
+        ctx.arc(cx, c.by, 24 * c.s, 0, Math.PI * 2);
+        ctx.arc(cx + 22 * c.s, c.by - 6 * c.s, 28 * c.s, 0, Math.PI * 2);
+        ctx.arc(cx + 46 * c.s, c.by, 22 * c.s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Distant Rolling Hills
+      ctx.fillStyle = waveNum >= 5 ? "#365314" : "#65a30d";
+      ctx.beginPath();
+      ctx.moveTo(0, 360);
+      ctx.quadraticCurveTo(420, 275, 840, 355);
+      ctx.quadraticCurveTo(1080, 395, 1280, 320);
+      ctx.lineTo(1280, 720);
+      ctx.lineTo(0, 720);
+      ctx.closePath();
+      ctx.fill();
+
+      // Main Lush Valley Meadow
+      const grassGrad = ctx.createLinearGradient(0, 340, 0, 720);
+      grassGrad.addColorStop(0, waveNum >= 5 ? "#4d7c0f" : "#84cc16");
+      grassGrad.addColorStop(1, waveNum >= 5 ? "#1a2e05" : "#3f6212");
+      ctx.fillStyle = grassGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 395);
+      ctx.quadraticCurveTo(640, 355, 1280, 390);
+      ctx.lineTo(1280, 720);
+      ctx.lineTo(0, 720);
+      ctx.closePath();
+      ctx.fill();
+
+      // Winding Dirt Siege Road
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#92400e";
+      ctx.lineWidth = 66;
+      ctx.beginPath();
+      ROAD_WAYPOINTS.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+
+      ctx.strokeStyle = "#d97706";
+      ctx.lineWidth = 54;
+      ctx.stroke();
+
+      ctx.strokeStyle = "#fcd34d";
+      ctx.lineWidth = 42;
+      ctx.stroke();
+      ctx.restore();
+
+      // Decorative Pine Trees & Wildflowers along Valley Edge
+      [
+        [475, 368, 0.9],
+        [520, 360, 1.1],
+        [1145, 372, 1.05],
+        [1205, 385, 0.85]
+      ].forEach(([tx, ty, ts]) => {
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.scale(ts, ts);
+        ctx.fillStyle = "#78350f";
+        ctx.fillRect(-5, 0, 10, 22);
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.moveTo(0, -45);
+        ctx.lineTo(-22, 4);
+        ctx.lineTo(22, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawOakwoodCastle(ctx, elapsed, targetLookX, targetLookY) {
+      ctx.save();
+
+      // 1. Royal Wizard Spire (Tall Rear Turret — glows when unlocked!)
+      const wizLvl = state.towers.wizard;
+      ctx.fillStyle = wizLvl > 0 ? "#cbd5e1" : "#94a3b8";
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 2.5;
+      ctx.fillRect(140, 125, 68, 220);
+      ctx.strokeRect(140, 125, 68, 220);
+      // Pointed Royal Blue Conical Roof
+      ctx.fillStyle = wizLvl > 0 ? "#1d4ed8" : "#475569";
+      ctx.beginPath();
+      ctx.moveTo(132, 125);
+      ctx.lineTo(174, 62);
+      ctx.lineTo(216, 125);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      if (wizLvl > 0) {
+        const orbPulse = 10 + Math.sin(elapsed * 6) * 3;
+        const glow = ctx.createRadialGradient(174, 54, 2, 174, 54, orbPulse * 2.2);
+        glow.addColorStop(0, "rgba(125, 211, 252, 0.95)");
+        glow.addColorStop(1, "rgba(56, 189, 248, 0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(174, 54, orbPulse * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath();
+        ctx.arc(174, 54, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. Main Stone Castle Keep & Battlements
+      const stoneGrad = ctx.createLinearGradient(35, 190, 340, 535);
+      stoneGrad.addColorStop(0, "#e2e8f0");
+      stoneGrad.addColorStop(0.5, "#cbd5e1");
+      stoneGrad.addColorStop(1, "#94a3b8");
+
+      ctx.fillStyle = stoneGrad;
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 3;
+      ctx.fillRect(45, 225, 260, 310);
+      ctx.strokeRect(45, 225, 260, 310);
+
+      // 3. Left Archer Tower
+      ctx.fillStyle = stoneGrad;
+      ctx.fillRect(65, 165, 92, 375);
+      ctx.strokeRect(65, 165, 92, 375);
+      // Crenelations on Archer Tower
+      for (let cx = 63; cx <= 137; cx += 24) {
+        ctx.fillRect(cx, 148, 16, 18);
+        ctx.strokeRect(cx, 148, 16, 18);
+      }
+
+      // Stationed Royal Archers on Left Tower (1 to 3 based on Archer Tower level)
+      const archerCount = state.towers.archer;
+      for (let a = 0; a < archerCount; a++) {
+        const ax = 85 + a * 26;
+        const ay = 148;
+        // Archer tunic & head
+        ctx.fillStyle = "#15803d";
+        ctx.fillRect(ax - 6, ay - 16, 12, 16);
+        ctx.fillStyle = "#fde6d0";
+        ctx.beginPath();
+        ctx.arc(ax, ay - 22, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Wooden Bow
+        ctx.strokeStyle = "#78350f";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ax + 6, ay - 14, 9, -0.45 * Math.PI, 0.45 * Math.PI);
+        ctx.stroke();
+      }
+
+      // 4. Right Gatehouse Tower & Arched Wooden Gate
+      ctx.fillStyle = stoneGrad;
+      ctx.fillRect(265, 265, 105, 275);
+      ctx.strokeRect(265, 265, 105, 275);
+      for (let cx = 263; cx <= 350; cx += 24) {
+        ctx.fillRect(cx, 248, 16, 18);
+        ctx.strokeRect(cx, 248, 16, 18);
+      }
+
+      // Arched Oak Gatehouse Doors
+      ctx.fillStyle = "#78350f";
+      ctx.strokeStyle = "#291509";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(318, 465, 36, Math.PI, 0, false);
+      ctx.lineTo(354, 535);
+      ctx.lineTo(282, 535);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 5. Catapult on Battlement Platform (when built!)
+      if (state.towers.catapult > 0) {
+        ctx.save();
+        ctx.translate(315, 248);
+        // Wooden frame
+        ctx.fillStyle = "#92400e";
+        ctx.strokeStyle = "#451a03";
+        ctx.lineWidth = 2;
+        ctx.fillRect(-24, -10, 48, 10);
+        ctx.strokeRect(-24, -10, 48, 10);
+        // Swinging Throwing Arm
+        ctx.save();
+        ctx.translate(4, -10);
+        ctx.rotate(-0.55 + state.catapultSwing * 1.1);
+        ctx.fillStyle = "#b45309";
+        ctx.fillRect(-32, -4, 38, 6);
+        ctx.strokeRect(-32, -4, 38, 6);
+        ctx.restore();
+        ctx.restore();
+      }
+
+      // 6. Gatehouse Boiling-Oil Cauldron (when unlocked & built!)
+      if (state.towers.cauldron > 0) {
+        ctx.save();
+        ctx.translate(356, 385);
+        ctx.rotate(state.cauldronPour * 0.65);
+        ctx.fillStyle = "#1e293b";
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI, false);
+        ctx.fill();
+        ctx.fillStyle = "#f97316";
+        ctx.fillRect(-12, -3, 24, 4);
+        ctx.restore();
+      }
+
+      // =====================================================================
+      // 7. KING PIP'S ROYAL BALCONY ON THE CASTLE KEEP!
+      // =====================================================================
+      // Stone Balcony Corbels & Platform
+      ctx.fillStyle = "#cbd5e1";
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 2.5;
+      ctx.fillRect(172, 268, 94, 16);
+      ctx.strokeRect(172, 268, 94, 16);
+
+      // Draw King Pip standing on the Royal Balcony!
+      drawKingPip(ctx, 219, 232, 0.78, {
+        lookX: targetLookX,
+        lookY: targetLookY,
+        isBlinking: state.isBlinking,
+        portraitMode: false,
+        elapsed
+      });
+
+      // Ornate Balcony Railing & Crimson-Gold Royal Banner in Front of Balcony
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillRect(174, 250, 90, 6);
+      ctx.strokeRect(174, 250, 90, 6);
+      for (let rx = 180; rx <= 258; rx += 13) {
+        ctx.fillRect(rx, 256, 4, 12);
+      }
+
+      // Hanging Crimson & Gold Royal Tapestry Banner
+      ctx.fillStyle = "#b91c1c";
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(192, 272);
+      ctx.lineTo(246, 272);
+      ctx.lineTo(246, 336);
+      ctx.lineTo(219, 352);
+      ctx.lineTo(192, 336);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Gold Crown Emblem on Tapestry
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.moveTo(209, 314);
+      ctx.lineTo(207, 302);
+      ctx.lineTo(214, 307);
+      ctx.lineTo(219, 299);
+      ctx.lineTo(224, 307);
+      ctx.lineTo(231, 302);
+      ctx.lineTo(229, 314);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /**
+     * =========================================================================
+     * 6. ENEMY TYPES, WAVE SPAWNER & TOWER DEFENSE COMBAT LOOP
+     * =========================================================================
+     */
+    const ENEMY_TEMPLATES = {
+      goblin: { name: "Goblin Scout", hp: 72, speed: 0.058, gold: 25, dmg: 7, flying: false, armored: false },
+      soldier: { name: "Foot Soldier", hp: 115, speed: 0.047, gold: 32, dmg: 10, flying: false, armored: false },
+      knight: { name: "Shield Knight", hp: 195, speed: 0.037, gold: 48, dmg: 13, flying: false, armored: true },
+      drake: { name: "Young Drake", hp: 130, speed: 0.062, gold: 42, dmg: 11, flying: true, armored: false },
+      ram: { name: "Battering Ram", hp: 310, speed: 0.029, gold: 70, dmg: 20, flying: false, armored: true },
+      wyvern: { name: "Sky Wyvern", hp: 175, speed: 0.068, gold: 55, dmg: 14, flying: true, armored: false },
+      dragonBoss: { name: "Crimson Fire Dragon", hp: 1350, speed: 0.015, gold: 300, dmg: 22, flying: true, armored: true, isBoss: true }
+    };
+
+    function buildWaveQueue(waveNum) {
+      const hpScale = 1 + Math.max(0, waveNum - 1) * 0.18;
+      const list = [];
+      if (waveNum === 1) {
+        list.push("goblin", "goblin", "soldier", "goblin", "soldier", "goblin", "soldier");
+      } else if (waveNum === 2) {
+        list.push("soldier", "knight", "drake", "knight", "drake", "knight", "soldier", "drake");
+      } else if (waveNum === 3) {
+        list.push("knight", "ram", "soldier", "drake", "ram", "knight", "drake", "ram");
+      } else if (waveNum === 4) {
+        list.push("knight", "wyvern", "ram", "wyvern", "knight", "wyvern", "ram", "wyvern", "knight");
+      } else {
+        // Wave 5 (or Endless Boss Wave): Heavy Vanguard + The Giant Crimson Fire Dragon Boss!
+        list.push("knight", "wyvern", "ram", "dragonBoss", "wyvern", "knight", "ram", "wyvern");
+      }
+      return list.map((type, idx) => ({
+        type,
+        delay: idx === 0 ? 0.55 : 2.0,
+        hpMult: hpScale
+      }));
+    }
+
+    function spawnEnemy(type, hpMult = 1) {
+      const tpl = ENEMY_TEMPLATES[type];
+      const maxHp = Math.round(tpl.hp * hpMult);
+      state.enemies.push({
+        id: Math.random().toString(36).slice(2),
+        type,
+        name: tpl.name,
+        progress: 0,
+        hp: maxHp,
+        maxHp,
+        speed: tpl.speed,
+        gold: tpl.gold,
+        dmg: tpl.dmg,
+        flying: tpl.flying,
+        armored: tpl.armored,
+        isBoss: Boolean(tpl.isBoss),
+        shieldHp: tpl.isBoss ? 420 : 0,
+        maxShieldHp: tpl.isBoss ? 420 : 0,
+        attackCooldown: 1.4,
+        breathCooldown: 3.4,
+        flashTimer: 0
+      });
+    }
+
+    function triggerRoyalDecreeVolley() {
+      state.pipHop = 14;
+      state.scepterRaise = 1.0;
+
+      // Launch empowered flaming bolts at up to 5 active enemies so grammar mastery saves the castle!
+      const targets = [...state.enemies]
+        .sort((a, b) => b.progress - a.progress)
+        .slice(0, 5);
+
+      if (targets.length === 0) {
+        // Decorative celebratory volley into the valley
+        for (let i = 0; i < 4; i++) {
+          state.projectiles.push({
+            kind: "royalBolt",
+            x: 225,
+            y: 225,
+            tx: 650 + i * 110,
+            ty: 440,
+            progress: 0,
+            speed: 2.2,
+            damage: 0,
+            splash: 0
+          });
+        }
+        return;
+      }
+
+      targets.forEach((enemy, idx) => {
+        const pt = getEnemyScreenPos(enemy);
+        state.projectiles.push({
+          kind: "royalBolt",
+          x: 225,
+          y: 220 - idx * 8,
+          tx: pt.x,
+          ty: pt.y,
+          targetId: enemy.id,
+          progress: 0,
+          speed: 2.45,
+          damage: 165,
+          splash: 85
+        });
+      });
+
+      addFloatingText(235, 185, "👑 ROYAL DECREE!", "#fde047");
+    }
+
+    function getEnemyScreenPos(enemy) {
+      const base = getPointOnRoad(enemy.progress);
+      return {
+        x: base.x,
+        y: enemy.isBoss ? base.y - 125 : (enemy.flying ? base.y - 95 : base.y - 22)
+      };
+    }
+
+    function damageEnemy(enemy, amount, isRoyalOrMagic = false) {
+      if (!enemy || enemy.hp <= 0) return;
+
+      // Crimson Dragon's magical Fire Shield blocks normal arrows until shattered by Royal Decree / Magic!
+      if (enemy.shieldHp > 0) {
+        if (isRoyalOrMagic) {
+          enemy.shieldHp = Math.max(0, enemy.shieldHp - amount);
+          enemy.flashTimer = 0.14;
+          const pos = getEnemyScreenPos(enemy);
+          spawnBurstParticles(pos.x, pos.y, "#38bdf8", 10);
+          if (enemy.shieldHp === 0) {
+            addFloatingText(pos.x, pos.y - 75, "💥 DRAGON SHIELD SHATTERED!", "#38bdf8");
+          }
+        } else {
+          const pos = getEnemyScreenPos(enemy);
+          spawnBurstParticles(pos.x, pos.y, "#fb923c", 4);
+        }
+        return;
+      }
+
+      const finalDmg = enemy.armored && !isRoyalOrMagic ? Math.ceil(amount * 0.55) : amount;
+      enemy.hp -= finalDmg;
+      enemy.flashTimer = 0.12;
+
+      if (enemy.hp <= 0) {
+        const pos = getEnemyScreenPos(enemy);
+        state.gold += enemy.gold;
+        state.score += enemy.isBoss ? 150 : 25;
+        spawnBurstParticles(pos.x, pos.y, "#facc15", enemy.isBoss ? 24 : 10);
+        addFloatingText(pos.x, pos.y - 30, `+${enemy.gold} Gold`, "#fde047");
+        updateHudUI();
+      }
+    }
+
+    function spawnBurstParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 45 + Math.random() * 110;
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 35,
+          r: 3 + Math.random() * 3.5,
+          color,
+          age: 0,
+          maxAge: 0.45 + Math.random() * 0.25
+        });
+      }
+    }
+
+    function addFloatingText(x, y, text, color) {
+      state.floatingTexts.push({
+        x,
+        y,
+        text,
+        color,
+        age: 0,
+        maxAge: 1.15
+      });
+    }
+
+    function updateBattleSimulation(dt) {
+      // 1. Spawn queued enemies for current wave
+      if (state.waveSpawnQueue.length > 0) {
+        state.spawnTimer -= dt;
+        if (state.spawnTimer <= 0) {
+          const next = state.waveSpawnQueue.shift();
+          spawnEnemy(next.type, next.hpMult);
+          state.spawnTimer = state.waveSpawnQueue.length > 0 ? state.waveSpawnQueue[0].delay : 0;
+        }
+      }
+
+      // 2. Update castle defense cooldowns & fire projectiles
+      state.catapultSwing = Math.max(0, state.catapultSwing - 2.6 * dt);
+      state.cauldronPour = Math.max(0, state.cauldronPour - 2.2 * dt);
+
+      if (state.enemies.length > 0) {
+        // Archer Tower
+        if (state.towers.archer > 0) {
+          state.towerCooldowns.archer -= dt;
+          if (state.towerCooldowns.archer <= 0) {
+            const target = [...state.enemies].sort((a, b) => b.progress - a.progress)[0];
+            if (target) {
+              const pt = getEnemyScreenPos(target);
+              state.projectiles.push({
+                kind: "arrow",
+                x: 125,
+                y: 145,
+                tx: pt.x,
+                ty: pt.y,
+                targetId: target.id,
+                progress: 0,
+                speed: 2.9,
+                damage: 16 + state.towers.archer * 9,
+                splash: 0
+              });
+              audio.bowShot();
+              state.towerCooldowns.archer = Math.max(0.45, 1.15 - state.towers.archer * 0.22);
+            }
+          }
+        }
+
+        // Catapult (targets ground enemies with splash boulders)
+        if (state.towers.catapult > 0) {
+          state.towerCooldowns.catapult -= dt;
+          if (state.towerCooldowns.catapult <= 0) {
+            const groundTargets = state.enemies.filter((e) => !e.flying);
+            const target = (groundTargets.length > 0 ? groundTargets : state.enemies)
+              .sort((a, b) => b.progress - a.progress)[0];
+            if (target) {
+              const pt = getEnemyScreenPos(target);
+              state.catapultSwing = 1.0;
+              state.projectiles.push({
+                kind: "boulder",
+                x: 315,
+                y: 235,
+                tx: pt.x,
+                ty: pt.y,
+                targetId: target.id,
+                progress: 0,
+                speed: 1.45,
+                damage: 34 + state.towers.catapult * 18,
+                splash: 68
+              });
+              audio.catapultLaunch();
+              state.towerCooldowns.catapult = Math.max(1.5, 2.75 - state.towers.catapult * 0.35);
+            }
+          }
+        }
+
+        // Gatehouse Oil Cauldron (damages enemies close to the wooden gate)
+        if (state.towers.cauldron > 0) {
+          state.towerCooldowns.cauldron -= dt;
+          if (state.towerCooldowns.cauldron <= 0) {
+            const nearGate = state.enemies.filter((e) => !e.flying && e.progress >= 0.76);
+            if (nearGate.length > 0) {
+              state.cauldronPour = 1.0;
+              nearGate.forEach((e) => damageEnemy(e, 28 + state.towers.cauldron * 14, true));
+              spawnBurstParticles(375, 470, "#f97316", 12);
+              state.towerCooldowns.cauldron = Math.max(1.4, 2.4 - state.towers.cauldron * 0.25);
+            }
+          }
+        }
+
+        // Royal Wizard Spire (zaps sky & ground enemies with magic lightning)
+        if (state.towers.wizard > 0) {
+          state.towerCooldowns.wizard -= dt;
+          if (state.towerCooldowns.wizard <= 0) {
+            const target = [...state.enemies].sort((a, b) => b.progress - a.progress)[0];
+            if (target) {
+              const pt = getEnemyScreenPos(target);
+              state.projectiles.push({
+                kind: "lightning",
+                x: 174,
+                y: 54,
+                tx: pt.x,
+                ty: pt.y,
+                targetId: target.id,
+                progress: 0,
+                speed: 3.4,
+                damage: 32 + state.towers.wizard * 16,
+                splash: 45
+              });
+              state.towerCooldowns.wizard = Math.max(0.95, 1.85 - state.towers.wizard * 0.25);
+            }
+          }
+        }
+      }
+
+      // 3. Move projectiles & apply impacts
+      for (let i = state.projectiles.length - 1; i >= 0; i--) {
+        const p = state.projectiles[i];
+        p.progress += p.speed * dt;
+        const target = state.enemies.find((e) => e.id === p.targetId);
+        if (target) {
+          const pt = getEnemyScreenPos(target);
+          p.tx = pt.x;
+          p.ty = pt.y;
+        }
+
+        if (p.progress >= 1) {
+          if (p.kind === "dragonFireball") {
+            state.castleHp = Math.max(0, state.castleHp - p.damage);
+            audio.gateHit();
+            spawnBurstParticles(p.tx, p.ty, "#f97316", 18);
+            addFloatingText(p.tx, p.ty - 35, `🔥 -${p.damage} Dragon Fire!`, "#fdba74");
+            updateHudUI();
+            if (state.castleHp <= 0) {
+              finishBattle(false);
+              return;
+            }
+            state.projectiles.splice(i, 1);
+            continue;
+          }
+
+          const isMagic = p.kind === "royalBolt" || p.kind === "lightning";
+          if (p.splash > 0) {
+            state.enemies.forEach((e) => {
+              const ep = getEnemyScreenPos(e);
+              if (Math.hypot(ep.x - p.tx, ep.y - p.ty) <= p.splash) {
+                damageEnemy(e, p.damage, isMagic);
+              }
+            });
+            spawnBurstParticles(p.tx, p.ty, isMagic ? "#fde047" : "#d97706", 9);
+          } else if (target) {
+            damageEnemy(target, p.damage, isMagic);
+          }
+          state.projectiles.splice(i, 1);
+        }
+      }
+
+      // 4. Advance enemies along road & attack Castle Gate if reached
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const e = state.enemies[i];
+        e.flashTimer = Math.max(0, e.flashTimer - dt);
+
+        if (e.hp <= 0) {
+          state.enemies.splice(i, 1);
+          continue;
+        }
+
+        // Fierce Crimson Dragon Boss launches long-range fireballs at the gate!
+        if (e.isBoss && e.progress >= 0.3 && e.progress < 0.92) {
+          e.breathCooldown -= dt;
+          if (e.breathCooldown <= 0) {
+            e.breathCooldown = 3.8;
+            const bPos = getEnemyScreenPos(e);
+            state.projectiles.push({
+              kind: "dragonFireball",
+              x: bPos.x - 95,
+              y: bPos.y - 22,
+              tx: 350,
+              ty: 430,
+              progress: 0,
+              speed: 1.35,
+              damage: 9,
+              splash: 0
+            });
+          }
+        }
+
+        if (e.progress < 1) {
+          e.progress = Math.min(1, e.progress + e.speed * dt);
+        } else {
+          // Enemy reached Oakwood Castle Gate!
+          e.attackCooldown -= dt;
+          if (e.attackCooldown <= 0) {
+            state.castleHp = Math.max(0, state.castleHp - e.dmg);
+            e.attackCooldown = 1.5;
+            audio.gateHit();
+            spawnBurstParticles(365, 465, "#ef4444", 10);
+            addFloatingText(365, 420, `-${e.dmg} Castle HP`, "#fca5a5");
+            updateHudUI();
+
+            if (state.castleHp <= 0) {
+              finishBattle(false);
+              return;
+            }
+          }
+        }
+      }
+
+      // Forgiving Last-Stand Royal Aegis: if Castle HP drops below 25%, King Pip unleashes a one-time rescue shield!
+      if (state.castleHp > 0 && state.castleHp <= 25 && !state.emergencyAegisUsed) {
+        state.emergencyAegisUsed = true;
+        state.castleHp = Math.min(state.maxCastleHp, state.castleHp + 20);
+        state.enemies.forEach((en) => {
+          en.progress = Math.max(0.15, en.progress - 0.16);
+        });
+        triggerRoyalDecreeVolley();
+        addFloatingText(430, 320, "🛡️ KING PIP'S ROYAL AEGIS! (+20% HP)", "#38bdf8");
+        updateHudUI();
+      }
+
+      // 5. Update particles & floating texts
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.age += dt;
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.vy += 150 * dt;
+        if (pt.age >= pt.maxAge) {
+          state.particles.splice(i, 1);
+        }
+      }
+
+      for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = state.floatingTexts[i];
+        ft.age += dt;
+        ft.y -= 34 * dt;
+        if (ft.age >= ft.maxAge) {
+          state.floatingTexts.splice(i, 1);
+        }
+      }
+
+      // 6. Check Wave Completion & Advance Wave / Trigger Victory
+      if (state.waveSpawnQueue.length === 0 && state.enemies.length === 0) {
+        state.waveClearDelay += dt;
+        if (state.waveClearDelay >= 1.35) {
+          state.waveClearDelay = 0;
+          if (!state.endlessMode && state.wave >= state.maxCampaignWaves) {
+            finishBattle(true);
+            return;
+          }
+          state.wave++;
+          state.waveSpawnQueue = buildWaveQueue(state.wave);
+          state.spawnTimer = 0.9;
+          const waveMeta = WAVE_INFO[Math.min(5, state.wave)];
+          addFloatingText(640, 260, `⚔️ ${waveMeta ? waveMeta.banner : `Wave ${state.wave}!`}`, "#fde047");
+          audio.royalDecreeFanfare();
+          updateHudUI();
+        }
+      }
+    }
+
+    /**
+     * =========================================================================
+     * 7. ENEMY, PROJECTILE, PARTICLE & CUTSCENE RENDERERS
+     * =========================================================================
+     */
+    function drawEnemies(ctx, elapsed) {
+      state.enemies.forEach((e) => {
+        const pos = getEnemyScreenPos(e);
+        const bob = e.flying ? Math.sin(elapsed * 6 + e.progress * 10) * 7 : Math.abs(Math.sin(elapsed * 9 + e.progress * 14)) * 4;
+
+        ctx.save();
+        ctx.translate(pos.x, pos.y - bob);
+
+        if (e.flashTimer > 0) {
+          ctx.filter = "brightness(1.85)";
+        }
+
+        if (e.isBoss) {
+          // ===================================================================
+          // WAVE 5 BOSS: THE CRIMSON FIRE DRAGON
+          // ===================================================================
+          const wingFlap = Math.sin(elapsed * 7) * 26;
+
+          // Ground shadow below flying dragon
+          ctx.fillStyle = "rgba(15, 10, 5, 0.32)";
+          ctx.beginPath();
+          ctx.ellipse(0, 128 + bob, 82, 18, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Rear Dragon Wing
+          ctx.fillStyle = "#7f1d1d";
+          ctx.strokeStyle = "#450a0a";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-10, -25);
+          ctx.quadraticCurveTo(35, -110 + wingFlap, 95, -65 + wingFlap);
+          ctx.quadraticCurveTo(55, -25, 25, -10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Spiked Dragon Tail
+          ctx.fillStyle = "#b91c1c";
+          ctx.beginPath();
+          ctx.moveTo(45, 12);
+          ctx.quadraticCurveTo(105, 5 + Math.sin(elapsed * 5) * 14, 138, -22);
+          ctx.lineTo(122, 18);
+          ctx.quadraticCurveTo(85, 32, 42, 28);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Muscular Crimson Dragon Body & Golden Belly Plates
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          ctx.ellipse(0, 10, 58, 36, -0.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#fbbf24";
+          ctx.beginPath();
+          ctx.ellipse(-10, 22, 40, 18, -0.15, 0, Math.PI);
+          ctx.fill();
+
+          // Dragon Neck & Horned Head (facing Oakwood Castle on left)
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          ctx.moveTo(-38, -5);
+          ctx.quadraticCurveTo(-72, -32, -88, -22);
+          ctx.lineTo(-78, 12);
+          ctx.quadraticCurveTo(-52, 18, -32, 14);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Dragon Snout & Horns
+          ctx.beginPath();
+          ctx.ellipse(-92, -16, 26, 17, 0.1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Swept-back Ivory Horns
+          ctx.fillStyle = "#fef3c7";
+          ctx.beginPath();
+          ctx.moveTo(-76, -28);
+          ctx.lineTo(-48, -52);
+          ctx.lineTo(-66, -20);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Glowing Yellow Dragon Eye
+          ctx.fillStyle = "#fef08a";
+          ctx.beginPath();
+          ctx.arc(-94, -20, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#0f172a";
+          ctx.fillRect(-95, -24, 2.5, 8);
+
+          // Front Dragon Wing
+          ctx.fillStyle = "#991b1b";
+          ctx.beginPath();
+          ctx.moveTo(5, -15);
+          ctx.quadraticCurveTo(52, -98 - wingFlap, 112, -48 - wingFlap);
+          ctx.quadraticCurveTo(68, -12, 32, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Shimmering Fire-Shield Barrier (broken by King Pip's Royal Decree / Magic!)
+          if (e.shieldHp > 0) {
+            const shieldAlpha = 0.28 + Math.sin(elapsed * 7) * 0.08;
+            ctx.fillStyle = `rgba(251, 146, 60, ${shieldAlpha})`;
+            ctx.strokeStyle = "#fde047";
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(-10, -5, 116, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        } else if (e.type === "goblin") {
+          // Goblin Scout
+          ctx.fillStyle = "#4d7c0f";
+          ctx.strokeStyle = "#1a2e05";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-13, -12, 26, 28, 8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#84cc16";
+          ctx.beginPath();
+          ctx.arc(0, -20, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Pointy goblin ears
+          ctx.beginPath();
+          ctx.moveTo(-11, -21);
+          ctx.lineTo(-21, -25);
+          ctx.lineTo(-10, -16);
+          ctx.moveTo(11, -21);
+          ctx.lineTo(21, -25);
+          ctx.lineTo(10, -16);
+          ctx.fill();
+          // Wooden round shield
+          ctx.fillStyle = "#92400e";
+          ctx.beginPath();
+          ctx.arc(-11, 0, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else if (e.type === "soldier") {
+          // Foot Soldier
+          ctx.fillStyle = "#b91c1c";
+          ctx.strokeStyle = "#1e293b";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-15, -16, 30, 34, 6);
+          ctx.fill();
+          ctx.stroke();
+          // Steel helmet & face
+          ctx.fillStyle = "#fde6d0";
+          ctx.beginPath();
+          ctx.arc(0, -25, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#94a3b8";
+          ctx.beginPath();
+          ctx.arc(0, -27, 13, Math.PI, 0, false);
+          ctx.fill();
+          ctx.stroke();
+          // Spear
+          ctx.strokeStyle = "#78350f";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-16, 14);
+          ctx.lineTo(-22, -42);
+          ctx.stroke();
+        } else if (e.type === "knight") {
+          // Armored Shield Knight
+          ctx.fillStyle = "#64748b";
+          ctx.strokeStyle = "#0f172a";
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.roundRect(-17, -20, 34, 38, 7);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, -30, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Red helmet plume
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          ctx.ellipse(4, -44, 10, 5, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+          // Heavy Tower Shield
+          ctx.fillStyle = "#cbd5e1";
+          ctx.beginPath();
+          ctx.roundRect(-24, -22, 18, 36, 4);
+          ctx.fill();
+          ctx.stroke();
+        } else if (e.type === "ram") {
+          // Iron Battering Ram on Wheels
+          ctx.fillStyle = "#78350f";
+          ctx.strokeStyle = "#291509";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-36, 12);
+          ctx.lineTo(0, -24);
+          ctx.lineTo(36, 12);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          // Ramming log with iron head
+          ctx.fillStyle = "#92400e";
+          ctx.fillRect(-44, -6, 84, 14);
+          ctx.fillStyle = "#475569";
+          ctx.beginPath();
+          ctx.arc(-44, 1, 9, 0, Math.PI * 2);
+          ctx.fill();
+          // Wheels
+          ctx.fillStyle = "#1e293b";
+          [-22, 22].forEach((wx) => {
+            ctx.beginPath();
+            ctx.arc(wx, 16, 9, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        } else {
+          // Young Drake or Sky Wyvern
+          const isWyvern = e.type === "wyvern";
+          const flap = Math.sin(elapsed * 11 + e.progress * 8) * 14;
+          ctx.fillStyle = isWyvern ? "#7e22ce" : "#ea580c";
+          ctx.strokeStyle = "#1e1b4b";
+          ctx.lineWidth = 2;
+          // Flapping wings
+          ctx.beginPath();
+          ctx.moveTo(0, -4);
+          ctx.quadraticCurveTo(18, -36 + flap, 36, -14 + flap);
+          ctx.lineTo(12, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          // Body & Head
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 22, 13, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(-22, -6, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        ctx.filter = "none";
+
+        // Enemy HP & Shield Bars
+        const barW = e.isBoss ? 140 : 44;
+        const barY = e.isBoss ? -88 : -48;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.fillRect(-barW / 2, barY, barW, 7);
+        const hpRatio = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = e.isBoss ? "#ef4444" : "#22c55e";
+        ctx.fillRect(-barW / 2 + 1, barY + 1, (barW - 2) * hpRatio, 5);
+
+        if (e.isBoss && e.shieldHp > 0) {
+          const shRatio = Math.max(0, e.shieldHp / e.maxShieldHp);
+          ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+          ctx.fillRect(-barW / 2, barY - 10, barW, 7);
+          ctx.fillStyle = "#38bdf8";
+          ctx.fillRect(-barW / 2 + 1, barY - 9, (barW - 2) * shRatio, 5);
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function drawProjectiles(ctx, elapsed) {
+      state.projectiles.forEach((p) => {
+        const t = Math.min(1, p.progress);
+        const arcHeight = p.kind === "boulder" ? Math.sin(t * Math.PI) * 115 : Math.sin(t * Math.PI) * 28;
+        const cx = p.x + (p.tx - p.x) * t;
+        const cy = p.y + (p.ty - p.y) * t - arcHeight;
+
+        ctx.save();
+        if (p.kind === "arrow") {
+          const ang = Math.atan2(p.ty - p.y, p.tx - p.x);
+          ctx.translate(cx, cy);
+          ctx.rotate(ang);
+          ctx.strokeStyle = "#fef3c7";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-12, 0);
+          ctx.lineTo(12, 0);
+          ctx.stroke();
+          ctx.fillStyle = "#94a3b8";
+          ctx.beginPath();
+          ctx.moveTo(15, 0);
+          ctx.lineTo(8, -4);
+          ctx.lineTo(8, 4);
+          ctx.closePath();
+          ctx.fill();
+        } else if (p.kind === "boulder") {
+          ctx.translate(cx, cy);
+          ctx.rotate(elapsed * 8);
+          ctx.fillStyle = "#64748b";
+          ctx.strokeStyle = "#1e293b";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else if (p.kind === "lightning") {
+          ctx.strokeStyle = "#38bdf8";
+          ctx.shadowColor = "#7dd3fc";
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo((p.x + cx) * 0.5, (p.y + cy) * 0.5 - 16);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+        } else if (p.kind === "royalBolt") {
+          ctx.fillStyle = "#fde047";
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.kind === "dragonFireball") {
+          ctx.fillStyle = "#f97316";
+          ctx.shadowColor = "#ef4444";
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#fef08a";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawParticlesAndTexts(ctx) {
+      state.particles.forEach((pt) => {
+        const alpha = Math.max(0, 1 - pt.age / pt.maxAge);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      state.floatingTexts.forEach((ft) => {
+        const alpha = Math.max(0, 1 - ft.age / ft.maxAge);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = "bold 20px Fredoka, sans-serif";
+        ctx.textAlign = "center";
+        ctx.strokeStyle = "#1c1917";
+        ctx.lineWidth = 4;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+    }
+
+    function drawIntroCutsceneCanvas(ctx, elapsed) {
+      const panel = state.introPanel;
+      if (panel === 0) {
+        // PANEL 1: Oakwood Castle & Valley with Crimson Dragon & Marching Knights on Horizon
+        drawValleyBackground(ctx, elapsed, 2);
+        drawOakwoodCastle(ctx, elapsed, 960, 260);
+
+        // Swooping Crimson Fire Dragon in the right-center sky
+        const dragonY = 235 + Math.sin(elapsed * 3.2) * 18;
+        const wingFlap = Math.sin(elapsed * 7.5) * 24;
+        ctx.save();
+        ctx.translate(935, dragonY);
+        ctx.fillStyle = "#991b1b";
+        ctx.strokeStyle = "#450a0a";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.quadraticCurveTo(45, -95 + wingFlap, 105, -45 + wingFlap);
+        ctx.quadraticCurveTo(55, -10, 25, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#dc2626";
+        ctx.beginPath();
+        ctx.ellipse(0, 8, 52, 30, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(-68, -12, 24, 15, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#fef08a";
+        ctx.beginPath();
+        ctx.arc(-72, -16, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Marching Shield Knights along the Valley Road
+        [770, 875, 980, 1085].forEach((kx, idx) => {
+          const bounce = Math.abs(Math.sin(elapsed * 7 + idx)) * 5;
+          ctx.save();
+          ctx.translate(kx, 455 - bounce);
+          ctx.fillStyle = "#64748b";
+          ctx.strokeStyle = "#0f172a";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-16, -20, 32, 36, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, -30, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          ctx.ellipse(4, -43, 9, 4, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      } else if (panel === 1) {
+        // PANEL 2: Close-Up of King Pip on the Royal Balcony Raising His Golden Scepter
+        drawValleyBackground(ctx, elapsed, 1);
+
+        // Close-up Stone Balcony Arch & Crimson Royal Banner
+        ctx.fillStyle = "#cbd5e1";
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 4;
+        ctx.fillRect(390, 130, 500, 460);
+        ctx.strokeRect(390, 130, 500, 460);
+
+        ctx.fillStyle = "#991b1b";
+        ctx.fillRect(450, 175, 380, 290);
+
+        state.scepterRaise = 0.75 + Math.sin(elapsed * 4) * 0.2;
+        drawKingPip(ctx, 640, 365, 2.25, {
+          lookX: 820,
+          lookY: 320,
+          isBlinking: state.isBlinking,
+          portraitMode: false,
+          elapsed
+        });
+        state.scepterRaise = 0;
+
+        // Stone Balcony Rail
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillRect(370, 455, 540, 28);
+        ctx.strokeRect(370, 455, 540, 28);
+      } else {
+        // PANEL 3: Full Castle & Valley Ready for Wave 1
+        drawValleyBackground(ctx, elapsed, 1);
+        drawOakwoodCastle(ctx, elapsed, 880, 440);
+      }
+    }
+
+    function drawOutroCutsceneCanvas(ctx, elapsed) {
+      drawValleyBackground(ctx, elapsed, 1);
+      state.pipHop = Math.abs(Math.sin(elapsed * 6)) * 12;
+      state.scepterRaise = 0.85;
+      drawOakwoodCastle(ctx, elapsed, 920, 240);
+      state.scepterRaise = 0;
+
+      // Celebratory Golden Fireworks in the Sky
+      [
+        { fx: 620, fy: 155, color: "#fde047", phase: 0 },
+        { fx: 860, fy: 130, color: "#38bdf8", phase: 1.4 },
+        { fx: 1080, fy: 185, color: "#fb7185", phase: 2.7 }
+      ].forEach((fw) => {
+        const cycle = (elapsed * 1.1 + fw.phase) % 1.6;
+        if (cycle < 1.1) {
+          const radius = cycle * 75;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 1 - cycle / 1.1);
+          ctx.fillStyle = fw.color;
+          for (let i = 0; i < 12; i++) {
+            const ang = (i / 12) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.arc(fw.fx + Math.cos(ang) * radius, fw.fy + Math.sin(ang) * radius, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      });
+    }
+
+    /**
+     * =========================================================================
+     * 8. HUD, DEFENSE TOWER CARDS & PREPOSITION SCROLL QUIZ CONTROLLERS
+     * =========================================================================
+     */
+    function getUnitCost(unitKey) {
+      const def = UNIT_DEFS[unitKey];
+      const lvl = state.towers[unitKey];
+      return def.baseCost + lvl * def.stepCost;
+    }
+
+    function updateHudUI() {
+      const waveMeta = WAVE_INFO[Math.min(5, state.wave)] || WAVE_INFO[5];
+      document.getElementById("hud-wave-badge").textContent = state.endlessMode
+        ? `Wave: ${state.wave} (Endless)`
+        : `Wave: ${state.wave}/${state.maxCampaignWaves}`;
+      document.getElementById("hud-wave-topic").textContent = `• ${waveMeta.topic}`;
+      document.getElementById("hud-gold-text").textContent = `${state.gold} Gold`;
+      document.getElementById("hud-score-text").textContent = String(state.score);
+
+      const hpPct = Math.max(0, Math.min(100, Math.round((state.castleHp / state.maxCastleHp) * 100)));
+      const hpFill = document.getElementById("hud-hp-fill");
+      hpFill.style.width = `${hpPct}%`;
+      hpFill.className = hpPct > 50
+        ? "h-full rounded-full bg-gradient-to-r from-emerald-500 to-lime-400 transition-all duration-200"
+        : hpPct > 25
+          ? "h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all duration-200"
+          : "h-full rounded-full bg-gradient-to-r from-rose-600 to-orange-400 transition-all duration-200";
+      document.getElementById("hud-hp-text").textContent = `${hpPct}%`;
+
+      // Update the 4 Castle Defense Unit Cards
+      Object.keys(UNIT_DEFS).forEach((key) => {
+        const def = UNIT_DEFS[key];
+        const lvl = state.towers[key];
+        const cardBtn = document.getElementById(`card-${key}`);
+        const lvlEl = document.getElementById(`lvl-${key}`);
+        const costEl = document.getElementById(`cost-${key}`);
+
+        if (state.wave < def.unlockWave) {
+          lvlEl.textContent = `Wave ${def.unlockWave}`;
+          costEl.textContent = `🔒 Wave ${def.unlockWave}`;
+          cardBtn.disabled = true;
+        } else if (lvl >= def.maxLvl) {
+          lvlEl.textContent = `Lv.${lvl} MAX`;
+          costEl.textContent = "⭐ Maxed";
+          cardBtn.disabled = true;
+        } else {
+          const cost = getUnitCost(key);
+          lvlEl.textContent = `Lv.${lvl}`;
+          costEl.textContent = lvl === 0 ? `🪙 Build (${cost})` : `🪙 Upgrade (${cost})`;
+          cardBtn.disabled = state.gold < cost;
+        }
+      });
+    }
+
+    function buyOrUpgradeUnit(unitKey) {
+      const def = UNIT_DEFS[unitKey];
+      const lvl = state.towers[unitKey];
+      if (!def || state.wave < def.unlockWave || lvl >= def.maxLvl) return;
+
+      const cost = getUnitCost(unitKey);
+      if (state.gold < cost) {
+        audio.wrong();
+        return;
+      }
+
+      state.gold -= cost;
+      state.towers[unitKey] = lvl + 1;
+      audio.coinBuild();
+      spawnBurstParticles(210, 240, "#fde047", 14);
+      addFloatingText(220, 195, `🛡️ ${def.name} Lv.${state.towers[unitKey]}!`, "#fde047");
+      updateHudUI();
+    }
+
+    function loadCurrentQuestion() {
+      const q = QUESTIONS_DATA[state.questionIdx % QUESTIONS_DATA.length];
+      const scrollNum = (state.questionIdx % QUESTIONS_DATA.length) + 1;
+      state.quizLocked = false;
+
+      document.getElementById("quiz-category-badge").textContent =
+        `📜 Preposition of ${q.category} • Scroll ${scrollNum}/${QUESTIONS_DATA.length}`;
+      document.getElementById("quiz-sentence-text").textContent = `"${q.sentence}"`;
+
+      const fb = document.getElementById("quiz-feedback-bar");
+      fb.classList.add("hidden");
+
+      const grid = document.getElementById("quiz-answers-grid");
+      grid.innerHTML = "";
+      const letters = ["A", "B", "C", "D"];
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "wood-card rounded-xl py-2 px-2.5 text-left font-bold text-xs sm:text-sm flex items-center gap-2 cursor-pointer";
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg bg-amber-400 text-stone-950 flex items-center justify-center text-xs font-extrabold shrink-0">${letters[idx]}</span>
+          <span class="truncate">${opt}</span>
+        `;
+        btn.addEventListener("click", () => handleAnswerClick(opt, btn));
+        grid.appendChild(btn);
+      });
+    }
+
+    function handleAnswerClick(chosenOption, btnEl) {
+      if (state.quizLocked || state.screen !== "playing") return;
+      const q = QUESTIONS_DATA[state.questionIdx % QUESTIONS_DATA.length];
+      const fb = document.getElementById("quiz-feedback-bar");
+      const panel = document.getElementById("quiz-scroll-panel");
+
+      const isFirstTry = !state.attemptedSet.has(q.id);
+      state.attemptedSet.add(q.id);
+
+      if (chosenOption === q.answer) {
+        state.quizLocked = true;
+        audio.royalDecreeFanfare();
+
+        state.gold += 100;
+        state.castleHp = Math.min(state.maxCastleHp, state.castleHp + 5);
+        state.solvedCount++;
+        if (isFirstTry) {
+          state.firstTrySet.add(q.id);
+          state.score += 50;
+        } else {
+          state.score += 30;
+        }
+
+        btnEl.style.background = "linear-gradient(180deg, #16a34a 0%, #15803d 100%)";
+        btnEl.style.borderColor = "#bbf7d0";
+
+        fb.textContent = `✅ Royal Decree! "${q.sentence.replace("______", q.answer)}" (+100 Gold, +5% HP)`;
+        fb.className = "rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold bg-emerald-100 border border-emerald-600 text-emerald-950";
+        fb.classList.remove("hidden");
+
+        triggerRoyalDecreeVolley();
+        updateHudUI();
+
+        setTimeout(() => {
+          state.questionIdx++;
+          loadCurrentQuestion();
+        }, 1150);
+      } else {
+        audio.wrong();
+        btnEl.disabled = true;
+        btnEl.style.opacity = "0.45";
+
+        panel.classList.remove("animate-scroll-shake");
+        void panel.offsetWidth;
+        panel.classList.add("animate-scroll-shake");
+
+        fb.textContent = `🦉 King Pip's Hint: ${q.hint}`;
+        fb.className = "rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold bg-amber-200 border border-amber-700 text-amber-950";
+        fb.classList.remove("hidden");
+      }
+    }
+
+    /**
+     * =========================================================================
+     * 9. CUTSCENES, BATTLE LIFECYCLE & VICTORY REPORT CARD
+     * =========================================================================
+     */
+    const INTRO_PANELS = [
+      {
+        badge: "Panel 1 of 3 • Danger on the Horizon",
+        caption: "High atop the lookout tower, a royal scout spots the Crimson Fire Dragon and an army of shield knights marching toward Oakwood Castle!"
+      },
+      {
+        badge: "Panel 2 of 3 • King Pip Rallies the Realm",
+        caption: "King Pip raises his gleaming golden scepter on the Royal Balcony—every solved Preposition Scroll unleashes a Royal Decree volley!"
+      },
+      {
+        badge: "Panel 3 of 3 • Defend the Drawbridge!",
+        caption: "Build Archer Towers, Catapults, Oil Cauldrons, and Wizard Spires across 5 waves to protect Oakwood Castle!"
+      }
+    ];
+
+    function updateIntroPanelUI() {
+      const p = INTRO_PANELS[state.introPanel];
+      document.getElementById("cutscene-header-label").textContent =
+        `OAKWOOD CASTLE // SIR ${state.studentName.toUpperCase()}`;
+      document.getElementById("cutscene-panel-badge").textContent = p.badge;
+      document.getElementById("cutscene-caption").textContent = p.caption;
+      document.getElementById("cutscene-next-btn").textContent =
+        state.introPanel < 2 ? "Next Scene ▶" : "Defend Castle ⚔️";
+    }
+
+    function startIntroCutscene() {
+      state.screen = "intro";
+      state.introPanel = 0;
+      document.getElementById("start-modal").classList.add("hidden");
+      document.getElementById("top-hud").classList.add("hidden");
+      document.getElementById("bottom-hud").classList.add("hidden");
+      document.getElementById("outro-hero-banner").classList.add("hidden");
+      document.getElementById("skip-cutscene-btn").classList.remove("hidden");
+      document.getElementById("cutscene-next-btn").classList.remove("hidden");
+      document.getElementById("cutscene-overlay").classList.remove("hidden");
+      updateIntroPanelUI();
+      audio.owlHoot();
+    }
+
+    function enterActiveBattle() {
+      state.screen = "playing";
+      document.getElementById("cutscene-overlay").classList.add("hidden");
+      document.getElementById("top-hud").classList.remove("hidden");
+      document.getElementById("bottom-hud").classList.remove("hidden");
+      updateHudUI();
+      loadCurrentQuestion();
+    }
+
+    function startOutroCutscene() {
+      state.screen = "outro";
+      state.outroTimer = 0;
+      document.getElementById("top-hud").classList.add("hidden");
+      document.getElementById("bottom-hud").classList.add("hidden");
+      document.getElementById("skip-cutscene-btn").classList.add("hidden");
+      document.getElementById("cutscene-next-btn").classList.add("hidden");
+      document.getElementById("cutscene-header-label").textContent =
+        "ROYAL VICTORY // CRIMSON DRAGON DEFEATED";
+      document.getElementById("cutscene-panel-badge").textContent =
+        "Oakwood Castle Saved!";
+      document.getElementById("cutscene-caption").textContent =
+        "Fireworks light up the valley as the Crimson Fire Dragon retreats beyond the mountains!";
+      document.getElementById("outro-banner-sub").textContent =
+        `Magnificent work, Sir ${state.studentName}! Preparing your Knight Report Card...`;
+      document.getElementById("outro-hero-banner").classList.remove("hidden");
+      document.getElementById("cutscene-overlay").classList.remove("hidden");
+    }
+
+    function finishBattle(won) {
+      if (won) {
+        audio.victoryTrumpet();
+        startOutroCutscene();
+      } else {
+        audio.wrong();
+        showReportCard(false);
+      }
+    }
+
+    function showReportCard(won) {
+      state.screen = "victory";
+      document.getElementById("cutscene-overlay").classList.add("hidden");
+      document.getElementById("outro-hero-banner").classList.add("hidden");
+      document.getElementById("top-hud").classList.add("hidden");
+      document.getElementById("bottom-hud").classList.add("hidden");
+
+      const totalAttempted = Math.max(1, state.attemptedSet.size);
+      const accuracy = Math.round((state.firstTrySet.size / totalAttempted) * 100);
+      const hpPct = Math.max(0, Math.round((state.castleHp / state.maxCastleHp) * 100));
+
+      let stars = "⭐";
+      let rankTitle = "Rank: Royal Castle Squire";
+      let rankShort = "⭐ Squire";
+      if (won && accuracy >= 80 && hpPct >= 60) {
+        stars = "⭐⭐⭐";
+        rankTitle = "Rank: 3-Star Royal Dragon-Slayer!";
+        rankShort = "⭐⭐⭐ Dragon-Slayer";
+      } else if (won && (accuracy >= 55 || hpPct >= 30)) {
+        stars = "⭐⭐";
+        rankTitle = "Rank: 2-Star Oakwood Knight!";
+        rankShort = "⭐⭐ Knight";
+      }
+
+      if (!state.resultLogged && state.studentName) {
+        state.resultLogged = true;
+        recordsStore.addRecord({
+          name: state.studentName,
+          className: state.studentClass,
+          score: state.score,
+          accuracy,
+          castleHp: hpPct,
+          rank: rankShort,
+          date: new Date().toLocaleDateString()
+        });
+      }
+
+      document.getElementById("victory-badge-pill").textContent = won
+        ? "🏅 Royal Knight Medal Awarded"
+        : "🛡️ Castle Gate Breached — Try Again!";
+      document.getElementById("victory-title").textContent = won
+        ? "CASTLE DEFENDED!"
+        : "RALLY THE GUARD!";
+      document.getElementById("victory-stars").textContent = won ? stars : "🛡️";
+      document.getElementById("victory-rank").textContent = won
+        ? rankTitle
+        : "Tip: Solve Preposition Scrolls quickly to unleash King Pip's Royal Decree!";
+      document.getElementById("victory-student-info").textContent =
+        `Sir ${state.studentName} (${state.studentClass}) • Score: ${state.score} • Castle HP: ${hpPct}% • 1st-Try Accuracy: ${accuracy}%`;
+
+      const categories = ["Place", "Manner & Tool", "Direction", "Time"];
+      const breakdownEl = document.getElementById("victory-breakdown");
+      breakdownEl.innerHTML = "";
+      categories.forEach((cat) => {
+        const catItems = QUESTIONS_DATA.filter((q) => q.category === cat);
+        const firstTryCat = catItems.filter((q) => state.firstTrySet.has(q.id)).length;
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-amber-700/30";
+        row.innerHTML = `
+          <span class="font-bold text-stone-800">${cat}</span>
+          <span class="font-bold text-emerald-700">${firstTryCat}/${catItems.length} 1st-Try</span>
+        `;
+        breakdownEl.appendChild(row);
+      });
+
+      document.getElementById("victory-modal").classList.remove("hidden");
+    }
+
+    function startNewBattle(endless = false) {
+      state.endlessMode = endless;
+      state.wave = 1;
+      state.gold = 150;
+      state.castleHp = 100;
+      state.score = 0;
+      state.towers = { archer: 1, catapult: 0, cauldron: 0, wizard: 0 };
+      state.towerCooldowns = { archer: 0.4, catapult: 1.2, cauldron: 1.0, wizard: 0.8 };
+      state.questionIdx = 0;
+      state.solvedCount = 0;
+      state.firstTrySet.clear();
+      state.attemptedSet.clear();
+      state.quizLocked = false;
+      state.enemies = [];
+      state.projectiles = [];
+      state.particles = [];
+      state.floatingTexts = [];
+      state.waveSpawnQueue = buildWaveQueue(1);
+      state.spawnTimer = 0.8;
+      state.waveClearDelay = 0;
+      state.emergencyAegisUsed = false;
+      state.resultLogged = false;
+
+      document.getElementById("victory-modal").classList.add("hidden");
+      document.getElementById("pause-modal").classList.add("hidden");
+      document.getElementById("records-modal").classList.add("hidden");
+
+      if (endless) {
+        document.getElementById("start-modal").classList.add("hidden");
+        enterActiveBattle();
+      } else {
+        startIntroCutscene();
+      }
+    }
+
+    /**
+     * =========================================================================
+     * 10. UI EVENT LISTENERS & KEYBOARD SHORTCUTS
+     * =========================================================================
+     */
+    const nameInput = document.getElementById("input-student-name");
+    const classInput = document.getElementById("input-student-class");
+    const savedStudent = recordsStore.getLastStudent();
+    if (savedStudent.name) nameInput.value = savedStudent.name;
+    if (savedStudent.cls) classInput.value = savedStudent.cls;
+    recordsStore.updateBadge();
+
+    document.getElementById("menu-tab-play").addEventListener("click", () => {
+      audio.click();
+      document.getElementById("menu-panel-play").classList.remove("hidden");
+      document.getElementById("menu-panel-guide").classList.add("hidden");
+      document.getElementById("menu-tab-play").className =
+        "px-3.5 py-1.5 rounded-xl bg-red-800 text-amber-50 font-bold text-xs sm:text-sm cursor-pointer";
+      document.getElementById("menu-tab-guide").className =
+        "px-3.5 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300/80 text-stone-800 font-bold text-xs sm:text-sm cursor-pointer";
+    });
+
+    document.getElementById("menu-tab-guide").addEventListener("click", () => {
+      audio.click();
+      document.getElementById("menu-panel-guide").classList.remove("hidden");
+      document.getElementById("menu-panel-play").classList.add("hidden");
+      document.getElementById("menu-tab-guide").className =
+        "px-3.5 py-1.5 rounded-xl bg-red-800 text-amber-50 font-bold text-xs sm:text-sm cursor-pointer";
+      document.getElementById("menu-tab-play").className =
+        "px-3.5 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300/80 text-stone-800 font-bold text-xs sm:text-sm cursor-pointer";
+    });
+
+    document.getElementById("new-student-btn").addEventListener("click", () => {
+      audio.click();
+      nameInput.value = "";
+      classInput.value = "";
+      nameInput.focus();
+    });
+
+    document.getElementById("start-battle-btn").addEventListener("click", () => {
+      const sName = nameInput.value.trim();
+      const sClass = classInput.value.trim();
+      const err = document.getElementById("menu-error-msg");
+      if (!sName || !sClass) {
+        err.classList.remove("hidden");
+        audio.wrong();
+        return;
+      }
+      err.classList.add("hidden");
+      state.studentName = sName;
+      state.studentClass = sClass;
+      recordsStore.setLastStudent(sName, sClass);
+
+      audio.startMusic();
+      startNewBattle(false);
+    });
+
+    // Cutscene controls
+    document.getElementById("cutscene-next-btn").addEventListener("click", () => {
+      audio.click();
+      if (state.introPanel < 2) {
+        state.introPanel++;
+        updateIntroPanelUI();
+      } else {
+        enterActiveBattle();
+      }
+    });
+
+    document.getElementById("skip-cutscene-btn").addEventListener("click", () => {
+      audio.click();
+      enterActiveBattle();
+    });
+
+    // Defense unit build/upgrade buttons
+    document.querySelectorAll("#defense-cards-grid button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buyOrUpgradeUnit(btn.dataset.unit);
+      });
+    });
+
+    // Quiz Hint button
+    document.getElementById("quiz-hint-btn").addEventListener("click", () => {
+      audio.owlHoot();
+      const q = QUESTIONS_DATA[state.questionIdx % QUESTIONS_DATA.length];
+      const fb = document.getElementById("quiz-feedback-bar");
+      fb.textContent = `💡 King Pip's Hint: ${q.hint}`;
+      fb.className = "rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold bg-sky-100 border border-sky-500 text-sky-950";
+      fb.classList.remove("hidden");
+    });
+
+    // Pause Menu controls
+    document.getElementById("pause-btn").addEventListener("click", () => {
+      if (state.screen !== "playing") return;
+      audio.click();
+      state.screen = "paused";
+      document.getElementById("pause-modal").classList.remove("hidden");
+    });
+
+    document.getElementById("resume-battle-btn").addEventListener("click", () => {
+      audio.click();
+      document.getElementById("pause-modal").classList.add("hidden");
+      state.screen = "playing";
+    });
+
+    document.getElementById("pause-restart-btn").addEventListener("click", () => {
+      audio.click();
+      startNewBattle(false);
+    });
+
+    document.getElementById("pause-menu-btn").addEventListener("click", () => {
+      audio.click();
+      state.screen = "menu";
+      document.getElementById("pause-modal").classList.add("hidden");
+      document.getElementById("top-hud").classList.add("hidden");
+      document.getElementById("bottom-hud").classList.add("hidden");
+      document.getElementById("start-modal").classList.remove("hidden");
+    });
+
+    // Victory / Defeat Report Card buttons
+    document.getElementById("victory-menu-btn").addEventListener("click", () => {
+      audio.click();
+      state.screen = "menu";
+      document.getElementById("victory-modal").classList.add("hidden");
+      document.getElementById("start-modal").classList.remove("hidden");
+    });
+
+    document.getElementById("victory-replay-btn").addEventListener("click", () => {
+      audio.click();
+      startNewBattle(false);
+    });
+
+    document.getElementById("victory-endless-btn").addEventListener("click", () => {
+      audio.click();
+      startNewBattle(true);
+    });
+
+    // Classroom Records Modal buttons
+    function openRecordsModal() {
+      audio.click();
+      recordsStore.renderTable();
+      document.getElementById("records-modal").classList.remove("hidden");
+    }
+    document.getElementById("open-records-menu-btn").addEventListener("click", openRecordsModal);
+    document.getElementById("pause-records-btn").addEventListener("click", openRecordsModal);
+    document.getElementById("victory-records-btn").addEventListener("click", openRecordsModal);
+
+    document.getElementById("close-records-btn").addEventListener("click", () => {
+      audio.click();
+      document.getElementById("records-modal").classList.add("hidden");
+    });
+    document.getElementById("clear-records-btn").addEventListener("click", () => {
+      audio.click();
+      recordsStore.clearRecords();
+    });
+    document.getElementById("copy-records-btn").addEventListener("click", () => {
+      audio.click();
+      recordsStore.copyForSpreadsheet();
+    });
+
+    // Music & SFX Toggles
+    function toggleMusic() {
+      state.musicMuted = !state.musicMuted;
+      audio.updateVolume();
+      document.getElementById("hud-music-btn").textContent = state.musicMuted ? "🔇" : "🎵";
+      document.getElementById("menu-music-btn").textContent = state.musicMuted ? "🎵 Music: OFF" : "🎵 Music: ON";
+      audio.click();
+    }
+    document.getElementById("hud-music-btn").addEventListener("click", toggleMusic);
+    document.getElementById("menu-music-btn").addEventListener("click", toggleMusic);
+
+    document.getElementById("hud-sfx-btn").addEventListener("click", () => {
+      state.muted = !state.muted;
+      audio.updateVolume();
+      document.getElementById("hud-sfx-btn").textContent = state.muted ? "🔇" : "🔊";
+    });
+
+    // Keyboard shortcuts (A/B/C/D or 1-4 for quick answers)
+    window.addEventListener("keydown", (e) => {
+      if (state.screen === "playing" && !state.quizLocked) {
+        const idxMap = { Digit1: 0, KeyA: 0, Digit2: 1, KeyB: 1, Digit3: 2, KeyC: 2, Digit4: 3, KeyD: 3 };
+        if (Object.prototype.hasOwnProperty.call(idxMap, e.code)) {
+          const btns = document.querySelectorAll("#quiz-answers-grid button");
+          if (btns[idxMap[e.code]]) btns[idxMap[e.code]].click();
+        }
+      }
+    });
+
+    /**
+     * =========================================================================
+     * 11. RESPONSIVE CANVAS RESIZING, POINTER TRACKING & 60FPS RENDER LOOP
+     * =========================================================================
+     */
+    const mainCanvas = document.getElementById("siege-canvas");
+    const mainCtx = mainCanvas.getContext("2d");
+    const portraitCanvas = document.getElementById("king-pip-portrait-canvas");
+    const portraitCtx = portraitCanvas.getContext("2d");
+
+    function updateLogicalPointer(clientX, clientY) {
+      const rect = mainCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      state.mouseX = ((clientX - rect.left) / rect.width) * 1280;
+      state.mouseY = ((clientY - rect.top) / rect.height) * 720;
+    }
+
+    window.addEventListener("mousemove", (e) => updateLogicalPointer(e.clientX, e.clientY));
+    window.addEventListener("touchstart", (e) => {
+      if (e.touches.length > 0) {
+        updateLogicalPointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    function resizeCanvases() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth || document.documentElement.clientWidth || 1280;
+      const h = window.innerHeight || document.documentElement.clientHeight || 720;
+      mainCanvas.width = Math.floor(w * dpr);
+      mainCanvas.height = Math.floor(h * dpr);
+    }
+    window.addEventListener("resize", resizeCanvases);
+    resizeCanvases();
+
+    let prevTimestamp = performance.now();
+    let loopStarted = false;
+
+    function renderLoop(now) {
+      loopStarted = true;
+      requestAnimationFrame(renderLoop);
+
+      const dt = Math.min(0.05, (now - prevTimestamp) / 1000);
+      prevTimestamp = now;
+      const elapsed = now * 0.001;
+
+      // Update King Pip blink, hop & golden scepter animation
+      state.blinkTimer -= dt;
+      if (state.blinkTimer <= 0) {
+        state.isBlinking = true;
+        if (state.blinkTimer <= -0.16) {
+          state.isBlinking = false;
+          state.blinkTimer = 2.9 + Math.random() * 2.2;
+        }
+      }
+      state.pipHop = Math.max(0, state.pipHop - 40 * dt);
+      state.scepterRaise = Math.max(0, state.scepterRaise - 1.35 * dt);
+
+      if (state.screen === "playing") {
+        updateBattleSimulation(dt);
+      }
+
+      // Render 1280x720 Main Siege Canvas
+      mainCtx.save();
+      mainCtx.scale(mainCanvas.width / 1280, mainCanvas.height / 720);
+
+      if (state.screen === "menu") {
+        drawValleyBackground(mainCtx, elapsed, 1);
+        drawOakwoodCastle(mainCtx, elapsed, state.mouseX, state.mouseY);
+      } else if (state.screen === "intro") {
+        drawIntroCutsceneCanvas(mainCtx, elapsed);
+      } else if (state.screen === "outro") {
+        state.outroTimer += dt;
+        drawOutroCutsceneCanvas(mainCtx, elapsed);
+        if (state.outroTimer >= 4.2) {
+          showReportCard(true);
+        }
+      } else {
+        // Playing, Paused, or Victory Backdrop
+        drawValleyBackground(mainCtx, elapsed, state.wave);
+        const leadEnemy = state.enemies[0];
+        const leadPos = leadEnemy ? getEnemyScreenPos(leadEnemy) : { x: state.mouseX, y: state.mouseY };
+        drawOakwoodCastle(mainCtx, elapsed, leadPos.x, leadPos.y);
+        drawEnemies(mainCtx, elapsed);
+        drawProjectiles(mainCtx, elapsed);
+        drawParticlesAndTexts(mainCtx);
+      }
+      mainCtx.restore();
+
+      // Render King Pip's Animated Royal Portrait Badge during Battle
+      if (state.screen === "playing" || state.screen === "paused") {
+        portraitCtx.clearRect(0, 0, portraitCanvas.width, portraitCanvas.height);
+        const pLookX = 55 + ((state.mouseX - 640) / 640) * 40;
+        const pLookY = 54 + ((state.mouseY - 360) / 360) * 32;
+        drawKingPip(portraitCtx, 52, 82, 0.98, {
+          lookX: pLookX,
+          lookY: pLookY,
+          isBlinking: state.isBlinking,
+          portraitMode: true,
+          elapsed
+        });
+      }
+    }
+
+    window.onload = function () {
+      if (!loopStarted) requestAnimationFrame(renderLoop);
+    };
+    if (!loopStarted) {
+      requestAnimationFrame(renderLoop);
+    }
+  </script>
+</body>
+</html>
